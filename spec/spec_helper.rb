@@ -11,6 +11,10 @@ Dir[File.expand_path("../support/**/*.rb", __FILE__)].each {|f| require f}
 
 $stderr.sync = true
 
+RSpec.configure do |config|
+  config.mock_with :flexmock
+end
+
 # method to wait until block passed returns true or timeout (default is 2 seconds) is reached 
 def wait_until(timeout=2)
   time_to_stop = Time.now + timeout
