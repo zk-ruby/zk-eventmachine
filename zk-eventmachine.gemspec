@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "zk/z_k_event_machine/version"
+require "z_k/z_k_event_machine/version"
 
 Gem::Specification.new do |s|
   s.name        = "zk-eventmachine"
@@ -13,10 +13,10 @@ Gem::Specification.new do |s|
   s.description = s.description
 
   s.add_dependency('zk', '~> 0.6.5')
-  s.add_dependency('eventmachine', '~> 0.12.10')
+  s.add_dependency('eventmachine', '= 0.12.10')
 
   s.add_development_dependency('rspec', '>= 2.4.0')
-  s.add_development_dependency('yardoc', '~> 0.7.0')
+  s.add_development_dependency('yard', '~> 0.7.0')
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
