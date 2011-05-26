@@ -1,5 +1,6 @@
 require 'zk'
 require 'eventmachine'
+require 'zookeeper' # wtf?
 
 module ZK
   module ZKEventMachine

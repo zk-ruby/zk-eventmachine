@@ -73,6 +73,7 @@ module ZK
         #
         def exception_for(hash)
           return nil if success?(hash)
+          return_code = hash.fetch(:rc)
           ZK::Exceptions::KeeperException.by_code(return_code).new
         end
 
