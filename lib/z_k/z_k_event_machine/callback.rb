@@ -5,13 +5,18 @@ module ZK
     #
     module Callback
       
-      # Used by ZooKeeper to return an asynchronous result. Semantics depend on
-      # the way you use this class. If callbacks or errbacks are set on the
-      # instance, they will be called with just the data returned from the call
-      # (much like their synchronous versions). If no callbacks/errbacks are
-      # set, then the block is called with a ZK::Exceptions::KeeperException
-      # instance or nil, then the rest of the arguments defined for that
-      # callback type (see subclass documentation for details)
+      # Used by ZooKeeper to return an asynchronous result. 
+      #
+      # If callbacks or errbacks are set on the instance, they will be called
+      # with just the data returned from the call (much like their synchronous
+      # versions). 
+      #
+      # If a block was given to #new or #on_result, then that block is called
+      # with a ZK::Exceptions::KeeperException instance or nil, then the rest
+      # of the arguments defined for that callback type
+      #
+      # the node-style and deferred-style results are *NOT* exclusive, so if
+      # you use both _you will be called with results in both formats_.
       #
       class Base
         include EM::Deferrable
@@ -27,8 +32,8 @@ module ZK
           end
         end
 
-        def initialize(&block)
-          @block = block
+        def initialize(prok=nil, &block)
+          on_result(prok, &block)
         end
 
         # register a block that should be called (node.js style) with the
@@ -36,17 +41,27 @@ module ZK
         #
         # @note replaces the block given to #new 
         #
-        def on_result(&block)
-          @block = block
+        def on_result(prok=nil, &block)
+          @block = (prok || block)
+        end
+
+        # Checks the return code from the async call. If the return code was not ZOK,
+        # then fire the errbacks and do the node-style error call
+        # otherwise, does nothing
+        def check_async_rc(hash)
+          call(hash) unless success?(hash)
         end
 
         # ZK will call this instance with a hash of data, which is the result
         # of the asynchronous call. Depending on the style of callback in use,
         # we take the appropriate actions
         #
-        # delegates to #deferred_style_result or #node_style_result
+        # delegates to #deferred_style_result and #node_style_result
         def call(hash)
-          @block.nil? ? deferred_style_result(hash) : node_style_result(hash)
+          EM.next_tick do
+            deferred_style_result(hash) 
+            node_style_result(hash)
+          end
         end
 
         # returns true if the request was successful (if return_code was Zookeeper::ZOK)
@@ -96,12 +111,11 @@ module ZK
         #   for the result and type of call
         def deferred_style_result(hash)
           # ensure this calls the callback on the reactor
-          EM.next_tick do
-            if success?(hash)
-              succeed(*hash.values_at(*async_result_keys))
-            else
-              fail(exception_for(hash))
-            end
+
+          if success?(hash)
+            succeed(*hash.values_at(*async_result_keys))
+          else
+            fail(exception_for(hash))
           end
         end
 
@@ -109,10 +123,8 @@ module ZK
         # (or nil if no error) and then the appropriate args for the type of
         # asynchronous call
         def node_style_result(hash)
-          # call this on the reactor
-          EM.next_tick do
-            @block.call(exception_for(hash), *hash.values_at(*async_result_keys))
-          end
+          return unless @block
+          @block.call(exception_for(hash), *hash.values_at(*async_result_keys))
         end
 
         protected
@@ -136,7 +148,7 @@ module ZK
         async_result_keys :string
       end
 
-      # used with Client#stat and Client#exists?
+      # used with Client#stat, Client#set and Client#exists?
       class StatCallback < Base
         async_result_keys :stat
       end
@@ -148,6 +160,45 @@ module ZK
       # used with Client#get_acl
       class ACLCallback < Base
         async_result_keys :acl, :stat
+      end
+
+      class << self
+
+        def new_data_cb(njs_block)
+          DataCallback.new(njs_block).tap do
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_string_cb(njs_block)
+          StringCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_stat_cb(njs_block)
+          StatCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_void_cb(njs_block)
+          VoidCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_children_cb(njs_block)
+          ChildrenCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_acl_cb(njs_block)
+          ACLCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
       end
     end
   end
