@@ -5,3 +5,4 @@ pkg/*
 .rvmrc
 .vimrc
 .rspec
+*.log

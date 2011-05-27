@@ -1,9 +1,13 @@
 require 'rubygems'
 require 'bundler/setup'
+require 'logger'
 
 $LOAD_PATH.unshift(File.expand_path('../../lib', __FILE__))
 
 require 'zk-eventmachine'
+require 'evented-spec'
+
+ZK.logger = Logger.new(File.expand_path('../../test.log', __FILE__)).tap {|l| l.level = Logger::DEBUG}
 
 # Requires supporting ruby files with custom matchers and macros, etc,
 # in spec/support/ and its subdirectories.

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require 'spec_helper'
 
 describe 'ZK::ZKEventMachine::Callback' do
   before do
@@ -100,6 +100,32 @@ describe 'ZK::ZKEventMachine::Callback' do
 
           it %[should have used the correct arguments] do
             @args.first.should be_instance_of(::ZK::Exceptions::NoNode)
+          end
+        end
+      end
+
+      describe 'on_result can be handed a block' do
+        before do
+          @args = nil
+
+          blk = lambda { |*a| @args = a }
+
+          @cb.on_result(blk)
+        end
+
+        describe 'success' do
+          before do
+            @cb.call(:rc => 0, :data => 'data', :stat => @stat_mock, :context => @context_mock)
+          end
+
+          it %[should have called the block] do
+            @args.should_not be_nil
+          end
+
+          it %[should have used the correct arguments] do
+            @args[0].should == nil
+            @args[1].should == 'data'
+            @args[2].should == @stat_mock
           end
         end
       end

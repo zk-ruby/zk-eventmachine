@@ -165,7 +165,7 @@ module ZK
       class << self
 
         def new_data_cb(njs_block)
-          DataCallback.new(njs_block).tap do
+          DataCallback.new(njs_block).tap do |cb|
             cb.check_async_rc(yield(cb))
           end
         end

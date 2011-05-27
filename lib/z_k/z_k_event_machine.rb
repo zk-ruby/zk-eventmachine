@@ -7,9 +7,11 @@ module ZK
   end
 end
 
-base = File.expand_path('../z_k_event_machine', __FILE__)
 
-require "#{base}/callback"
-require "#{base}/client"
+$LOAD_PATH.unshift(File.expand_path('../..', __FILE__)).uniq!
+
+require "z_k/z_k_event_machine/callback"
+require "z_k/z_k_event_machine/event_handler_proxy"
+require "z_k/z_k_event_machine/client"
 
 

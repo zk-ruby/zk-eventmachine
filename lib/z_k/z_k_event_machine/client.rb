@@ -1,11 +1,19 @@
 module ZK
   module ZKEventMachine
     class Client
+      include ZK::Logging
+
       attr_reader :client
 
       def initialize(zk_client)
         @client = zk_client
+        @eh_proxy = EventHandlerProxy.new(zk_client.event_handler)
       end
+
+      def event_handler
+        @eh_proxy
+      end
+      alias :watcher :event_handler
 
       # get data at path, optionally enabling a watch on the node
       #
