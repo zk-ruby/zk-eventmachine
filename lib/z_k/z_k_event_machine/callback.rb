@@ -163,30 +163,34 @@ module ZK
       end
 
       class << self
-
         def new_data_cb(njs_block)
           DataCallback.new(njs_block).tap do |cb|
             cb.check_async_rc(yield(cb))
           end
         end
+        alias :new_get_cb :new_data_cb    # create alias so that this matches the client API name
 
         def new_string_cb(njs_block)
           StringCallback.new(njs_block).tap do |cb|
             cb.check_async_rc(yield(cb))
           end
         end
+        alias :new_create_cb :new_string_cb
 
         def new_stat_cb(njs_block)
           StatCallback.new(njs_block).tap do |cb|
             cb.check_async_rc(yield(cb))
           end
         end
+        alias :new_set_cb :new_stat_cb
 
         def new_void_cb(njs_block)
           VoidCallback.new(njs_block).tap do |cb|
             cb.check_async_rc(yield(cb))
           end
         end
+        alias :new_delete_cb :new_void_cb
+        alias :new_set_acl_cb :new_void_cb
 
         def new_children_cb(njs_block)
           ChildrenCallback.new(njs_block).tap do |cb|
@@ -199,6 +203,7 @@ module ZK
             cb.check_async_rc(yield(cb))
           end
         end
+        alias :new_get_acl_cb :new_acl_cb
       end
     end
   end

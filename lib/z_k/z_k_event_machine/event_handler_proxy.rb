@@ -12,7 +12,7 @@ module ZK
 
       def register(path, &block)
         @event_handler.register(path) do |*a|
-          EM.next_tick { block.call(*a) }
+          EM.schedule { block.call(*a) }
         end
       end
       alias :subscribe :register
