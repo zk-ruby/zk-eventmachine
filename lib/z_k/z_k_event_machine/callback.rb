@@ -19,7 +19,7 @@ module ZK
       # you use both _you will be called with results in both formats_.
       #
       class Base
-        include EM::Deferrable
+        include Deferred
 
         # set the result keys that should be used by node_style_result and to
         # call the deferred_style_result blocks
@@ -58,7 +58,7 @@ module ZK
         #
         # delegates to #deferred_style_result and #node_style_result
         def call(hash)
-          EM.next_tick do
+          EM.schedule do
             deferred_style_result(hash) 
             node_style_result(hash)
           end
@@ -90,21 +90,6 @@ module ZK
           return nil if success?(hash)
           return_code = hash.fetch(:rc)
           ZK::Exceptions::KeeperException.by_code(return_code).new
-        end
-
-        # slight modification to EM::Deferrable, 
-        #
-        # @returns [self] to allow for chaining
-        #
-        def callback(&block)
-          super(&block)
-          self
-        end
-
-        # @see #callback
-        def errback(&block)
-          super(&block)
-          self
         end
 
         # @abstract should call set_deferred_status with the appropriate args

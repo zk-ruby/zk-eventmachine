@@ -1,13 +1,24 @@
 module ZK
   module ZKEventMachine
-    class Client
+    class Client < ZK::Client::Base
       include ZK::Logging
+
+      DEFAULT_TIMEOUT = 10
 
       attr_reader :client
 
-      def initialize(zk_client)
-        @client = zk_client
-        @eh_proxy = EventHandlerProxy.new(zk_client.event_handler)
+      # Takes same options as ZK::Client::Base
+      def initialize(host, opts={})
+        @host = host
+        @event_handler = EventHandlerEM.new(self)
+      end
+
+      # open a ZK connection, attach it to the reactor. 
+      # returns an EM::Deferrable that will be called when the connection is
+      # ready for use
+      def connect(&blk)
+        @cnx = ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
+        @cnx.on_attached(&blk)
       end
 
       def event_handler

@@ -3,27 +3,28 @@ module ZK
     # a small wrapper around the EventHandler instance, allowing us to 
     # deliver the event on the reactor thread, as opposed to calling it directly
     #
-    class EventHandlerProxy
+    class EventHandlerEM < ZK::EventHandler
       include ZK::Logging
 
-      def initialize(event_handler)
-        @event_handler = event_handler
-      end
-
       def register(path, &block)
-        @event_handler.register(path) do |*a|
+        new_blk = lambda do |*a|
           EM.schedule { block.call(*a) }
         end
+
+        super(path, &new_blk)
       end
       alias :subscribe :register
 
-      def method_missing(sym, *a, &b)
-        if @event_handler.respond_to?(sym)
-          @event_handler.__send__(sym, *a, &b)
-        else
-          super
-        end
+      def process(event)
+        EM.schedule { super(event) }
       end
+
+      protected
+        # we're running on the Reactor, don't need to synchronize (hah, hah)
+        #
+        def synchronize
+          yield
+        end
     end
   end
 end
