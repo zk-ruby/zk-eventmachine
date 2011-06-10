@@ -26,8 +26,10 @@ module ZK
       end
       
       def close!(&blk)
-        @event_handler.clear!
-        @cnx.close(&blk)
+        @cnx.close do
+          @event_handler.clear!
+          blk.call
+        end
       end
 
       # get data at path, optionally enabling a watch on the node
