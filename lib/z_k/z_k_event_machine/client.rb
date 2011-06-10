@@ -48,19 +48,19 @@ module ZK
       end
 
       def set(path, data, opts={}, &block)
-        Callback.new_set_callback(block) do |cb|
+        Callback.new_set_cb(block) do |cb|
           super(path, data, opts.merge(:callback => cb))
         end
       end
 
       def stat(path, opts={}, &block)
-        Callback.new_stat_callback(block) do |cb|
+        Callback.new_stat_cb(block) do |cb|
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def delete(path, opts={}, &block)
-        Callback.new_delete_callback(block) do |cb|
+        Callback.new_delete_cb(block) do |cb|
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -72,13 +72,13 @@ module ZK
       end
 
       def get_acl(path, opts={}, &block)
-        Callback.new_get_acl_callback(block) do |cb|
+        Callback.new_get_acl_cb(block) do |cb|
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def set_acl(path, acls, opts={}, &block)
-        Callback.new_set_acl_callback(block) do |cb|
+        Callback.new_set_acl_cb(block) do |cb|
           super(path, acls, opts.merge(:callback => cb))
         end
       end

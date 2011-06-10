@@ -54,8 +54,7 @@ module ZK::ZKEventMachine
               end
 
               dfr.errback  do |exc| 
-                logger.debug { "got errback" }
-                @exc = exc
+                raise exc
               end
             end
           end
@@ -136,8 +135,7 @@ module ZK::ZKEventMachine
                 end
 
                 d.errback  do |exc| 
-                  logger.debug { "got errback" }
-                  @exc = exc
+                  raise exc
                 end
               end
             end
@@ -156,6 +154,28 @@ module ZK::ZKEventMachine
             end
           end
         end # non-sequence node
+
+        describe 'sequence node' do
+          it 'should create the node and call the callback' do
+            em do
+              @zkem.connect do
+                d = @zkem.create(@path, @data, :sequence => true)
+
+                d.callback do |*a| 
+                  logger.debug { "got callback with #{a.inspect}" }
+                  a.should_not be_empty
+                  a.first.should =~ /#{@path}\d+$/
+                  EM.reactor_thread?.should be_true
+                  @zkem.close! { done }
+                end
+
+                d.errback  do |exc| 
+                  raise exc
+                end
+              end
+            end
+          end
+        end
       end # success
 
       describe 'failure' do
@@ -193,6 +213,94 @@ module ZK::ZKEventMachine
         end
       end # failure
     end # create
+
+
+    describe 'set' do
+      describe 'success' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @data = 'this is data'
+          @new_data = 'this is better data'
+          @zk.create(@path, @data)
+          @orig_stat = @zk.stat(@path)
+        end
+
+        it 'should set the data and call the callback' do
+          em do
+            @zkem.connect do
+              dfr = @zkem.set(@path, @new_data)
+
+              dfr.callback do |stat| 
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.version.should > @orig_stat.version
+                EM.reactor_thread?.should be_true
+
+                @zkem.get(@path) do |_,data|
+                  data.should == @new_data
+                  @zkem.close! { done }
+                end
+              end
+
+              dfr.errback  do |exc| 
+                raise exc
+              end
+            end
+          end
+        end
+
+        it 'should set the data and do a node-style callback' do
+          em do
+            @zkem.connect do
+              @zkem.set(@path, @new_data) do |exc,stat|
+                exc.should be_nil
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                EM.reactor_thread?.should be_true
+
+                @zkem.get(@path) do |_,data|
+                  data.should == @new_data
+                  @zkem.close! { done }
+                end
+              end
+            end
+          end
+        end
+      end # success
+
+      describe 'failure' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @zk.delete(@path) rescue ZK::Exceptions::NoNode
+        end
+
+        it %[should call the errback in deferred style] do
+          em do
+            @zkem.connect do
+              d = @zkem.set(@path, '')
+
+              d.callback do
+                raise "Should not have been called"
+              end
+
+              d.errback do |exc|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+
+        it %[should have NoNode as the first argument to the block] do
+          em do
+            @zkem.connect do
+              @zkem.set(@path, '') do |exc,_|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+      end # failure
+    end # set
 
   end
 end
