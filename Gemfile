@@ -10,7 +10,7 @@ git 'git://github.com/slyphon/zookeeper.git', :branch => 'dev/em' do
 end
 
 git 'git://github.com/slyphon/zk.git', :branch => 'dev/eventmachine' do
-  gem 'zk', '~> 0.7.1'
+  gem 'zk', '~> 0.8.0'
 end
 
 # vim:ft=ruby
