@@ -543,8 +543,100 @@ module ZK::ZKEventMachine
           end
         end
       end # failure
-    end # delete
+    end # children
+
+    describe 'get_acl' do
+      describe 'success' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @data = 'this is data'
+          @zk.create(@path, @data)
+        end
+
+        it 'should get the data and call the callback' do
+          em do
+            @zkem.connect do
+              dfr = @zkem.get_acl(@path)
+
+              dfr.callback do |acls,stat| 
+                acls.should be_kind_of(Array)
+                acls.first.should be_kind_of(ZookeeperACLs::ACL)
+                stat.should be_instance_of(ZookeeperStat::Stat)
+
+                EM.reactor_thread?.should be_true
+                @zkem.close! { done }
+              end
+
+              dfr.errback  do |exc| 
+                raise exc
+              end
+            end
+          end
+        end
+
+        it 'should get the data and do a node-style callback' do
+          em do
+            @zkem.connect do
+              @zkem.get_acl(@path) do |exc,acls,stat|
+                exc.should be_nil
+                acls.should be_kind_of(Array)
+                acls.first.should be_kind_of(ZookeeperACLs::ACL)
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                EM.reactor_thread?.should be_true
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+      end # success
+
+      describe 'failure' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @zk.delete(@path) rescue ZK::Exceptions::NoNode
+        end
+
+        it %[should call the errback in deferred style] do
+          em do
+            @zkem.connect do
+              d = @zkem.get_acl(@path)
+
+              d.callback do
+                raise "Should not have been called"
+              end
+
+              d.errback do |exc|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+
+        it %[should have NoNode as the first argument to the block] do
+          em do
+            @zkem.connect do
+              @zkem.get_acl(@path) do |exc,*a|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+      end # failure
+    end # get_acl
+
+    describe 'set_acl' do
+      describe 'success' do
+        it 'should set the acl and call the callback' 
+        it 'should set the acl and do a node-style callback' 
+      end # success
+
+      describe 'failure' do
+        it %[should call the errback in deferred style] 
+        it %[should have NoNode as the first argument to the block] 
+      end # failure
+    end # set_acl
   end # Client
 end # ZK::ZKEventMachine
-
 

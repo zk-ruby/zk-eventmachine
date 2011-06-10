@@ -2,6 +2,7 @@ module ZK
   module ZKEventMachine
     class Client < ZK::Client::Base
       include ZK::Logging
+      include Unixisms
 
       DEFAULT_TIMEOUT = 10
 
@@ -17,7 +18,8 @@ module ZK
       # returns an EM::Deferrable that will be called when the connection is
       # ready for use
       def connect(&blk)
-        @cnx = ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
+        # XXX: maybe move this into initialize, need to figure out how to schedule it properly
+        @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
         @cnx.on_attached(&blk)
       end
 
@@ -27,7 +29,7 @@ module ZK
       
       def close!(&blk)
         @cnx.close do
-          @event_handler.clear!
+          event_handler.clear!
           blk.call
         end
       end
