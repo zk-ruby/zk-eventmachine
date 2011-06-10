@@ -38,8 +38,6 @@ module ZK::ZKEventMachine
         end
 
         it 'should get the data and call the callback' do
-          @cb_args = @exc = nil
-
           em do
             @zkem.connect do
               dfr = @zkem.get(@path)
@@ -301,6 +299,85 @@ module ZK::ZKEventMachine
         end
       end # failure
     end # set
+
+    describe 'stat' do
+      describe 'success' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @data = 'this is data'
+          @zk.create(@path, @data)
+          @orig_stat = @zk.stat(@path)
+        end
+
+        it 'should get the data and call the callback' do
+          em do
+            @zkem.connect do
+              dfr = @zkem.stat(@path)
+
+              dfr.callback do |stat| 
+                stat.should_not be_nil
+                stat.should == @orig_stat
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                EM.reactor_thread?.should be_true
+                @zkem.close! { done }
+              end
+
+              dfr.errback  do |exc| 
+                raise exc
+              end
+            end
+          end
+        end
+
+        it 'should get the data and do a node-style callback' do
+          em do
+            @zkem.connect do
+              @zkem.stat(@path) do |exc,stat|
+                exc.should be_nil
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                EM.reactor_thread?.should be_true
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+      end # success
+
+      describe 'failure' do
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @zk.delete(@path) rescue ZK::Exceptions::NoNode
+        end
+
+        it %[should call the errback in deferred style] do
+          em do
+            @zkem.connect do
+              d = @zkem.stat(@path)
+
+              d.callback do
+                raise "Should not have been called"
+              end
+
+              d.errback do |exc|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+
+        it %[should have NoNode as the first argument to the block] do
+          em do
+            @zkem.connect do
+              @zkem.stat(@path) do |exc,_|
+                exc.should be_kind_of(ZK::Exceptions::NoNode)
+                @zkem.close! { done }
+              end
+            end
+          end
+        end
+      end # failure
+    end # stat
 
   end
 end
