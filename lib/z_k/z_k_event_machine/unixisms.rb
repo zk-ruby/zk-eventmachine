@@ -2,51 +2,6 @@ module ZK
   module ZKEventMachine
     module Unixisms
 
-      class RecursiveRemover
-        include Deferred
-
-        def self.rm(path)
-          new(path).rm
-        end
-
-        def initialize(path)
-          @path = path
-          @child_abspaths = []
-        end
-
-        def rm
-          d = children(@path)
-
-          d.callback do |chld_list,_|
-            @child_abspaths = chld_list.map { |cname| File.join(@path, cname) }
-            rm_my_kids
-          end
-
-          self
-        end # rm
-
-        def rm_my_kids
-          if @child_abspaths.empty?
-            self.succeed()
-            return
-          end
-
-          ca = @child_abspaths.shift
-
-          d = self.class.rm(ca)
-
-          d.callback do
-            @child_abspaths.delete(ca)
-            rm_my_kids
-          end
-
-          d.errback do |e|
-            unless e.kind_of?(ZK::Exceptions::NoNode)
-              self.fail(e)
-            end
-          end
-        end
-      end # RecursiveRemover
 
       def mkdir_p(path, &block)
         _handle_calling_convention(_mkdir_p_dfr(path), &block)
@@ -70,6 +25,42 @@ module ZK
           dfr.callback { |*a| blk.call(nil, *a) }
           dfr.errback { |exc| blk.call(exc) }
           nil
+        end
+
+        def _rm_rf_dfr(path)
+          Deferred::Default.new.tap do |my_dfr|
+            delete(path) do |exc|
+              case exc
+              when nil, Exceptions::NoNode
+                my_dfr.succeed
+              when Exceptions::NotEmpty
+                children(path) do |exc,chldrn,_|
+                  case exc
+                  when Exceptions::NoNode
+                    my_dfr.succeed
+                  when nil
+                    abspaths = chldrn.map { |n| [path, n].join('/') }
+                    Iterator.new(abspaths).map(
+                      lambda { |path,iter|  
+                        d = _rm_rf_dfr(path)
+                        d.callback  { |*| iter.return(nil) }
+                        d.errback   { |e| iter.return(e)   }
+                      },
+                      lambda { |results|
+                        if results.compact.empty?
+                          my_dfr.succeed
+                        else
+                          my_dfr.fail
+                        end
+                      }
+                    )
+                  else
+                    my_dfr.fail(exc)
+                  end
+                end
+              end
+            end
+          end
         end
 
         def _mkdir_p_dfr(path)
