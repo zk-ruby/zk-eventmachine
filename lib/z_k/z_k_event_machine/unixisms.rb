@@ -2,12 +2,58 @@ module ZK
   module ZKEventMachine
     module Unixisms
 
+      class RecursiveRemover
+        include Deferred
+
+        def self.rm(path)
+          new(path).rm
+        end
+
+        def initialize(path)
+          @path = path
+          @child_abspaths = []
+        end
+
+        def rm
+          d = children(@path)
+
+          d.callback do |chld_list,_|
+            @child_abspaths = chld_list.map { |cname| File.join(@path, cname) }
+            rm_my_kids
+          end
+
+          self
+        end # rm
+
+        def rm_my_kids
+          if @child_abspaths.empty?
+            self.succeed()
+            return
+          end
+
+          ca = @child_abspaths.shift
+
+          d = self.class.rm(ca)
+
+          d.callback do
+            @child_abspaths.delete(ca)
+            rm_my_kids
+          end
+
+          d.errback do |e|
+            unless e.kind_of?(ZK::Exceptions::NoNode)
+              self.fail(e)
+            end
+          end
+        end
+      end # RecursiveRemover
+
       def mkdir_p(path, &block)
         _handle_calling_convention(_mkdir_p_dfr(path), &block)
       end
 
       def rm_rf(paths)
-        raise NotImplementedError, "Coming soon"
+        _rm_rf_dfr(paths)
       end
 
       def find(*paths, &block)

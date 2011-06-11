@@ -1,6 +1,7 @@
 require 'zk'
+require 'rubygems'
 require 'eventmachine'
-require 'em-synchrony'
+
 require 'zookeeper' # wtf?
 require 'zookeeper/em_client'
 

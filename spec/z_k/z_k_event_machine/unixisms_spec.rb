@@ -56,6 +56,22 @@ module ZK::ZKEventMachine
         end
       end
     end
+
+    describe 'rm_rf' do
+      before do
+        @paths = ['blah/foo', 'blah/bar', 'blah/bar/one', 'blah/bar/two', 'blah/quux'].map { |n| File.join(@base_path, n) }
+        @paths.each { |n| @zk.mkdir_p(n) }
+      end
+
+      it %[should remove the paths recursively] do
+        em do
+          @zkem.connect do
+            @zkem.rm_rf(@paths)
+          end
+        end
+      end
+
+    end
   end
 end
 
