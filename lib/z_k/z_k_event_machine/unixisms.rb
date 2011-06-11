@@ -1,11 +1,29 @@
 module ZK
   module ZKEventMachine
     module Unixisms
+
       def mkdir_p(path)
-        Deferred::Default.new.tap do |dfr|
-          create(path, '', :mode => persistent).callback do |path|
+        deferred = Deferred::Default.new
+        
+        create(path, '', :mode => persistent) do |exc,p|
+          case exc
+          when Exceptions::NoNode
+            mkdir_p(File.dirname(path)).callback do |p|
+              begin
+                deferred.succeed(create(path, '', :mode => persistent))
+              rescue Exception => e
+                deferred.fail(e)
+              end
+            end.errback do |e|
+              deferred.fail(e)
+            end
+          when Exceptions::NodeExists
+            # ok, we've finally gotten to a node that exists, so 
+            deferred.succeed(p)
           end
         end
+
+        deferred
       end
 
       def rm_rf(paths)

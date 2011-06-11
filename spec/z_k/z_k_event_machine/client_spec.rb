@@ -7,7 +7,7 @@ module ZK::ZKEventMachine
 
     before do
       @zk = ::ZK.new
-      @base_path = '/zk-em'
+      @base_path = '/zk-em-testing'
       @zk.rm_rf(@base_path)
       @zk.mkdir_p(@base_path)
       @zkem = ZK::ZKEventMachine::Client.new('localhost:2181')
@@ -300,6 +300,51 @@ module ZK::ZKEventMachine
       end # failure
     end # set
 
+    describe 'exists?' do
+      before do
+        @path = [@base_path, 'foo'].join('/')
+        @data = 'this is data'
+      end
+
+      it 'should call the block with true if the node exists' do
+        @zk.create(@path, @data)
+
+        em do
+          @zkem.connect do
+            dfr = @zkem.exists?(@path)
+
+            dfr.callback do |bool| 
+              bool.should be_true
+              @zkem.close! { done }
+            end
+
+            dfr.errback  do |exc| 
+              raise exc
+            end
+          end
+        end
+      end
+
+      it 'should call the block with false if the node does not exist' do
+        @zk.delete(@path) rescue ZK::Exceptions::NoNode
+
+        em do
+          @zkem.connect do
+            dfr = @zkem.exists?(@path)
+
+            dfr.callback do |bool| 
+              bool.should be_false
+              @zkem.close! { done }
+            end
+
+            dfr.errback  do |exc| 
+              raise exc
+            end
+          end
+        end
+      end
+    end
+
     describe 'stat' do
       describe 'success' do
         before do
@@ -343,40 +388,32 @@ module ZK::ZKEventMachine
         end
       end # success
 
-      describe 'failure' do
+      describe 'non-existent node' do
         before do
           @path = [@base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
-        it %[should call the errback in deferred style] do
+        it %[should not be an error to do stat on a non-existent node] do
           em do
             @zkem.connect do
-              d = @zkem.stat(@path)
+              dfr = @zkem.stat(@path)
 
-              d.callback do
-                raise "Should not have been called"
+              dfr.callback do |stat| 
+                stat.should_not be_nil
+                stat.exists?.should be_false
+                stat.should be_instance_of(ZookeeperStat::Stat)
+                EM.reactor_thread?.should be_true
+                @zkem.close! { done }
               end
 
-              d.errback do |exc|
-                exc.should be_kind_of(ZK::Exceptions::NoNode)
-                @zkem.close! { done }
+              dfr.errback  do |exc| 
+                raise exc
               end
             end
           end
         end
-
-        it %[should have NoNode as the first argument to the block] do
-          em do
-            @zkem.connect do
-              @zkem.stat(@path) do |exc,_|
-                exc.should be_kind_of(ZK::Exceptions::NoNode)
-                @zkem.close! { done }
-              end
-            end
-          end
-        end
-      end # failure
+      end # non-existent node
     end # stat
 
     describe 'delete' do

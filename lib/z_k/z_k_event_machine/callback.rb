@@ -133,8 +133,46 @@ module ZK
         async_result_keys :string
       end
 
-      # used with Client#stat, Client#set and Client#exists?
+      # used with Client#stat and Client#exists?
       class StatCallback < Base
+        async_result_keys :stat
+
+        # stat has a different concept of 'success', stat on a node that doesn't 
+        # exist is not an exception, it's a certain kind of stat (like a null stat).
+        def success?(hash)
+          rc = hash[:rc] 
+          (rc == Zookeeper::ZOK) || (rc == Zookeeper::ZNONODE)
+        end
+      end
+
+      # supports the syntactic sugar exists? call
+      class ExistsCallback < StatCallback
+        async_result_keys :stat
+
+        # @abstract should call set_deferred_status with the appropriate args
+        #   for the result and type of call
+        def deferred_style_result(hash)
+          # ensure this calls the callback on the reactor
+
+          if success?(hash)
+            succeed(hash[:stat].exists?)
+          else
+            fail(exception_for(hash))
+          end
+        end
+
+        # call the user block with the correct Exception class as the first arg
+        # (or nil if no error) and then the appropriate args for the type of
+        # asynchronous call
+        def node_style_result(hash)
+          return unless @block
+          @block.call(exception_for(hash), hash[:stat].exists?)
+        end
+      end
+
+      # set operation returns a stat object, but in this case a NONODE is an
+      # error (unlike with StatCallback)
+      class SetCallback < Base
         async_result_keys :stat
       end
 
@@ -149,9 +187,10 @@ module ZK
 
       class << self
         def new_data_cb(njs_block)
-          DataCallback.new(njs_block).tap do |cb|
-            cb.check_async_rc(yield(cb))
-          end
+          DataCallback.new(njs_block).tap do |cb| # create the callback with the user-provided block
+            cb.check_async_rc(yield(cb))          # yield the callback to the caller, check the return result 
+                                                  # of the async operation (not the async result)
+          end                                     # return the callback
         end
         alias :new_get_cb :new_data_cb    # create alias so that this matches the client API name
 
@@ -167,7 +206,18 @@ module ZK
             cb.check_async_rc(yield(cb))
           end
         end
-        alias :new_set_cb :new_stat_cb
+
+        def new_exists_cb(njs_block)
+          ExistsCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
+
+        def new_set_cb(njs_block)
+          SetCallback.new(njs_block).tap do |cb|
+            cb.check_async_rc(yield(cb))
+          end
+        end
 
         def new_void_cb(njs_block)
           VoidCallback.new(njs_block).tap do |cb|

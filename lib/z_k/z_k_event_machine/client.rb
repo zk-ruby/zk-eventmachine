@@ -58,9 +58,17 @@ module ZK
       end
 
       def stat(path, opts={}, &block)
-        Callback.new_stat_cb(block) do |cb|
+        cb_style = opts.delete(:cb_style) { |_| 'stat' }
+
+        meth = :"new_#{cb_style}_cb"
+
+        Callback.__send__(meth, block) do |cb|
           super(path, opts.merge(:callback => cb))
         end
+      end
+
+      def exists?(path, opts={}, &block)
+        stat(path, opts.merge(:cb_style => 'exists'), &block)
       end
 
       def delete(path, opts={}, &block)
