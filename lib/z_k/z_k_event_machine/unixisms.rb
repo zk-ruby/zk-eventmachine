@@ -7,8 +7,19 @@ module ZK
         _handle_calling_convention(_mkdir_p_dfr(path), &block)
       end
 
-      def rm_rf(paths)
-        _rm_rf_dfr(paths)
+      def rm_rf(paths, &blk)
+        dfr = Deferred::Default.new.tap do |my_dfr|
+          Iterator.new(paths, 1).each(
+            lambda { |path,iter|          # foreach
+              d = _rm_rf_dfr(path)
+              d.callback { iter.next }
+              d.errback  { |e| my_dfr.fail(e) }
+            },
+            lambda { my_dfr.succeed }     # after completion
+          )
+        end
+
+        _handle_calling_convention(dfr, &blk)
       end
 
       def find(*paths, &block)
@@ -24,12 +35,13 @@ module ZK
           return dfr unless blk
           dfr.callback { |*a| blk.call(nil, *a) }
           dfr.errback { |exc| blk.call(exc) }
-          nil
+          dfr
         end
 
         def _rm_rf_dfr(path)
           Deferred::Default.new.tap do |my_dfr|
             delete(path) do |exc|
+#               $stderr.puts "delete(#{path.inspect}) callback: exc: #{exc.inspect}"
               case exc
               when nil, Exceptions::NoNode
                 my_dfr.succeed
@@ -40,19 +52,17 @@ module ZK
                     my_dfr.succeed
                   when nil
                     abspaths = chldrn.map { |n| [path, n].join('/') }
-                    Iterator.new(abspaths).map(
+                    Iterator.new(abspaths).each(
                       lambda { |path,iter|  
                         d = _rm_rf_dfr(path)
-                        d.callback  { |*| iter.return(nil) }
-                        d.errback   { |e| iter.return(e)   }
+                        d.callback  { |*| 
+                          iter.next
+                        }
+                        d.errback   { |e| 
+                          my_dfr.fail(e)   # this will stop the iteration
+                        }
                       },
-                      lambda { |results|
-                        if results.compact.empty?
-                          my_dfr.succeed
-                        else
-                          my_dfr.fail
-                        end
-                      }
+                      lambda { my_dfr.succeed }
                     )
                   else
                     my_dfr.fail(exc)

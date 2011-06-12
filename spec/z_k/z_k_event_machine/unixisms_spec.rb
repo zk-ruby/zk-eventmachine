@@ -66,11 +66,28 @@ module ZK::ZKEventMachine
       it %[should remove the paths recursively] do
         em do
           @zkem.connect do
-            @zkem.rm_rf(@paths)
+            @zkem.rm_rf(@paths).callback do
+              done
+            end.errback do |exc|
+              raise exc
+            end
+          end
+        end
+      end # it
+
+      it %[should use the nodejs style if a block is given] do
+        em do
+          @zkem.connect do
+            @zkem.rm_rf(@paths) do |exc|
+              if exc.nil?
+                done
+              else
+                raise exc
+              end
+            end
           end
         end
       end
-
     end
   end
 end
