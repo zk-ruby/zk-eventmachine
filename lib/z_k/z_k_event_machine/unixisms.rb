@@ -1,8 +1,6 @@
 module ZK
   module ZKEventMachine
     module Unixisms
-
-
       def mkdir_p(path, &block)
         _handle_calling_convention(_mkdir_p_dfr(path), &block)
       end
