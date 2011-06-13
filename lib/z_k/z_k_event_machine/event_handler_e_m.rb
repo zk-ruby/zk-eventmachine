@@ -7,7 +7,8 @@ module ZK
       include ZK::Logging
 
       def register(path, &block)
-        # use the supplied block, but ensure that it gets called on the reactor thread
+        # use the supplied block, but ensure that it gets called on the reactor
+        # thread
         new_blk = lambda do |*a|
           EM.schedule { block.call(*a) }
         end
@@ -21,7 +22,7 @@ module ZK
       end
 
       protected
-        # we're running on the Reactor, don't need to synchronize (hah, hah)
+        # we're running on the Reactor, don't need to synchronize (hah, hah, we'll see...)
         #
         def synchronize
           yield
