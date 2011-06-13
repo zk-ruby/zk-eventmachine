@@ -7,7 +7,7 @@ module ZK
 
       def rm_rf(paths, &blk)
         dfr = Deferred::Default.new.tap do |my_dfr|
-          Iterator.new(paths, 1).each(
+          Iterator.new(Array(paths).flatten.compact, 1).each(
             lambda { |path,iter|          # foreach
               d = _rm_rf_dfr(path)
               d.callback { iter.next }
