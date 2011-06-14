@@ -39,6 +39,7 @@ module ZK
         if @cnx
           @cnx.close do
             event_handler.clear!
+            @cnx = nil
             on_close.succeed
           end
         else
