@@ -11,7 +11,13 @@ module ZK
       # Takes same options as ZK::Client::Base
       def initialize(host, opts={})
         @host = host
+        @close_deferred = Deferred::Default.new
         @event_handler = EventHandlerEM.new(self)
+      end
+
+      def on_close(&blk)
+        @close_deferred.callback(&blk) if blk
+        @close_deferred
       end
 
       # open a ZK connection, attach it to the reactor. 
@@ -28,11 +34,18 @@ module ZK
       end
       
       def close!(&blk)
-        return unless @cnx
-        @cnx.close do
-          event_handler.clear!
-          blk.call if blk
+        on_close(&blk)
+
+        if @cnx
+          @cnx.close do
+            event_handler.clear!
+            on_close.succeed
+          end
+        else
+          on_close.succeed
         end
+
+        on_close
       end
       alias :close :close!
 
