@@ -18,23 +18,26 @@ module ZK::ZKEventMachine
       @zk.close!
     end
 
-    em_after do
-      @zkem.close!
+    def close_and_done!
+      @zkem.close! { done }
     end
 
     describe 'mkdir_p' do
       before do
-        @bogus_path = [@base_path, 'bogus', 'path', 'to', 'qwer'].join('/')
+        @bogus_paths = [
+          [@base_path, 'bogus', 'path', 'to', 'qwer'].join('/'),
+          [@base_path, 'bogus', 'path', 'to', 'somethingelse'].join('/')
+        ]
       end
 
       it %[should create the path recursively] do
-        @zk.exists?(@bogus_path).should be_false
+        @zk.exists?(@bogus_paths.first).should be_false
 
         em do
           @zkem.connect do
-            @zkem.mkdir_p(@bogus_path).callback do |p|
-              p.should == @bogus_path
-              done
+            @zkem.mkdir_p(@bogus_paths.first).callback do |p|
+              p.first.should == @bogus_paths.first
+              close_and_done!
             end.errback do |e|
               raise e
             end
@@ -43,14 +46,31 @@ module ZK::ZKEventMachine
       end
 
       it %[should not error on a path that already exists] do
-        @zk.mkdir_p(@bogus_path)
+        @zk.mkdir_p(@bogus_paths.first)
 
         em do
           @zkem.connect do
-            @zkem.mkdir_p(@bogus_path) do |exc,p|
+            @zkem.mkdir_p(@bogus_paths.first) do |exc,p|
               exc.should be_nil
-              p.should == @bogus_path
-              done
+              p.first.should == @bogus_paths.first
+              close_and_done!
+            end
+          end
+        end
+      end
+
+      it %[should take an array of paths] do
+        @bogus_paths.each do |p|
+          @zk.exists?(p).should be_false
+        end
+
+        em do
+          @zkem.connect do
+            @zkem.mkdir_p(@bogus_paths) do |exc,paths|
+              exc.should be_nil
+              paths.should be_kind_of(Array)
+              @bogus_paths.each { |p| paths.should include(p) }
+              close_and_done!
             end
           end
         end
@@ -67,7 +87,7 @@ module ZK::ZKEventMachine
         em do
           @zkem.connect do
             @zkem.rm_rf(@paths).callback do
-              done
+              close_and_done!
             end.errback do |exc|
               raise exc
             end
@@ -80,7 +100,7 @@ module ZK::ZKEventMachine
           @zkem.connect do
             @zkem.rm_rf(@paths) do |exc|
               if exc.nil?
-                done
+                close_and_done!
               else
                 raise exc
               end

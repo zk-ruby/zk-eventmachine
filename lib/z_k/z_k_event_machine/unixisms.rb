@@ -1,8 +1,19 @@
 module ZK
   module ZKEventMachine
     module Unixisms
-      def mkdir_p(path, &block)
-        _handle_calling_convention(_mkdir_p_dfr(path), &block)
+      def mkdir_p(paths, &block)
+        dfr = Deferred::Default.new.tap do |my_dfr|
+          Iterator.new(Array(paths).flatten.compact, 1).map(
+            lambda { |path,iter|          # foreach
+              d = _mkdir_p_dfr(path)
+              d.callback { |p| iter.return(p) }
+              d.errback  { |e| my_dfr.fail(e) }
+            },
+            lambda { |results| my_dfr.succeed(results) }     # after completion
+          )
+        end
+
+        _handle_calling_convention(dfr, &block)
       end
 
       def rm_rf(paths, &blk)
