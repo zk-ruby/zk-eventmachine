@@ -41,7 +41,9 @@ module ZK::ZKEventMachine
             @zkem.close! { done }
           end
 
-          @zkem.create(@path, @data) do |exc|
+          common_eb = lambda { |exc| raise exc }
+
+          @zkem.create(@path, @data) do |exc,path|
             raise exc if exc
 
             @zkem.stat(@path, :watch => true) do |e,*a| 
@@ -64,8 +66,10 @@ module ZK::ZKEventMachine
           eb_raise = lambda { |e| raise e if e }
 
           @zkem.create(@path, @data).callback { |*|
-            @zkem.children(@path, :watch => true).callback { |ary|
+            @zkem.children(@path, :watch => true).callback { |ary,stat|
+              logger.debug { "called back with: #{ary.inspect}" }
               ary.should be_empty
+              stat.should be_kind_of(ZookeeperStat::Stat)
 
               @zkem.create(@child_path, '') { |p|
                 p.should == @path

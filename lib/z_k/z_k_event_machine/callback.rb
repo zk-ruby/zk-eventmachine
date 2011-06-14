@@ -100,7 +100,7 @@ module ZK
 
           if success?(hash)
             vals = hash.values_at(*async_result_keys)
-            logger.debug { "#{self.class.name}#node_style_result async_result_keys: #{async_result_keys.inspect}, vals: #{vals.inspect}" }
+            logger.debug { "#{self.class.name}#deferred_style_result async_result_keys: #{async_result_keys.inspect}, vals: #{vals.inspect}" }
             self.succeed(*hash.values_at(*async_result_keys))
           else
             self.fail(exception_for(hash))
