@@ -28,6 +28,7 @@ module ZK
       end
       
       def close!(&blk)
+        return unless @cnx
         @cnx.close do
           event_handler.clear!
           blk.call if blk
