@@ -58,7 +58,7 @@ module ZK::ZKEventMachine
           end
         end
 
-        it 'should get the data and do a node-style callback' do
+        it 'should get the data and do a nodejs-style callback' do
           em do
             @zkem.connect do
               @zkem.get(@path) do |exc,data,stat|
@@ -90,6 +90,7 @@ module ZK::ZKEventMachine
 
               d.errback do |exc|
                 exc.should be_kind_of(ZK::Exceptions::NoNode)
+                logger.debug { "calling done" }
                 @zkem.close! { done }
               end
             end
@@ -139,7 +140,7 @@ module ZK::ZKEventMachine
             end
           end
 
-          it 'should get the data and do a node-style callback' do
+          it 'should get the data and do a nodejs-style callback' do
             em do
               @zkem.connect do
                 @zkem.create(@path, @data) do |exc,created_path|
@@ -246,7 +247,7 @@ module ZK::ZKEventMachine
           end
         end
 
-        it 'should set the data and do a node-style callback' do
+        it 'should set the data and do a nodejs-style callback' do
           em do
             @zkem.connect do
               @zkem.set(@path, @new_data) do |exc,stat|
@@ -374,7 +375,7 @@ module ZK::ZKEventMachine
           end
         end
 
-        it 'should get the stat and do a node-style callback' do
+        it 'should get the stat and do a nodejs-style callback' do
           em do
             @zkem.connect do
               @zkem.stat(@path) do |exc,stat|
@@ -435,17 +436,17 @@ module ZK::ZKEventMachine
                 @zkem.close! { done }
               end
 
-              d.errback  do |exc| 
+              d.errback do |exc| 
                 raise exc
               end
             end
           end
         end
 
-        it 'should get the data and do a node-style callback' do
+        it 'should delete the znode and do a nodejs-style callback' do
           em do
             @zkem.connect do
-              @zkem.stat(@path) do |exc|
+              @zkem.delete(@path) do |exc|
                 exc.should be_nil
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
@@ -528,7 +529,7 @@ module ZK::ZKEventMachine
           end
         end
 
-        it 'should get the children and do a node-style callback' do
+        it 'should get the children and do a nodejs-style callback' do
           em do
             @zkem.connect do
               @zkem.children(@path) do |exc, children, stat|
@@ -611,7 +612,7 @@ module ZK::ZKEventMachine
           end
         end
 
-        it 'should get the data and do a node-style callback' do
+        it 'should get the data and do a nodejs-style callback' do
           em do
             @zkem.connect do
               @zkem.get_acl(@path) do |exc,acls,stat|
@@ -666,7 +667,7 @@ module ZK::ZKEventMachine
     describe 'set_acl' do
       describe 'success' do
         it 'should set the acl and call the callback' 
-        it 'should set the acl and do a node-style callback' 
+        it 'should set the acl and do a nodejs-style callback' 
       end # success
 
       describe 'failure' do

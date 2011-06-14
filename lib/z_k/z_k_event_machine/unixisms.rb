@@ -39,7 +39,6 @@ module ZK
         def _rm_rf_dfr(path)
           Deferred::Default.new.tap do |my_dfr|
             delete(path) do |exc|
-#               $stderr.puts "delete(#{path.inspect}) callback: exc: #{exc.inspect}"
               case exc
               when nil, Exceptions::NoNode
                 my_dfr.succeed

@@ -26,7 +26,7 @@ module ZK
         #
         def self.async_result_keys(*syms)
           if syms.empty? 
-            @async_result_keys
+            @async_result_keys || []
           else
             @async_result_keys = syms.map { |n| n.to_sym }
           end
@@ -58,6 +58,7 @@ module ZK
         #
         # delegates to #deferred_style_result and #node_style_result
         def call(hash)
+          logger.debug { "#{self.class.name}#call hash: #{hash.inspect}" }
           EM.schedule do
             deferred_style_result(hash) 
             node_style_result(hash)
@@ -98,9 +99,11 @@ module ZK
           # ensure this calls the callback on the reactor
 
           if success?(hash)
-            succeed(*hash.values_at(*async_result_keys))
+            vals = hash.values_at(*async_result_keys)
+            logger.debug { "#{self.class.name}#node_style_result async_result_keys: #{async_result_keys.inspect}, vals: #{vals.inspect}" }
+            self.succeed(*hash.values_at(*async_result_keys))
           else
-            fail(exception_for(hash))
+            self.fail(exception_for(hash))
           end
         end
 
@@ -109,7 +112,13 @@ module ZK
         # asynchronous call
         def node_style_result(hash)
           return unless @block
-          @block.call(exception_for(hash), *hash.values_at(*async_result_keys))
+          vals = hash.values_at(*async_result_keys)
+          logger.debug { "#{self.class.name}#node_style_result async_result_keys: #{async_result_keys.inspect}, vals: #{vals.inspect}" }
+          if exc = exception_for(hash)
+            @block.call(exc)
+          else
+            @block.call(nil, *vals)
+          end
         end
 
         protected
