@@ -30,9 +30,10 @@ module ZK
       def close!(&blk)
         @cnx.close do
           event_handler.clear!
-          blk.call
+          blk.call if blk
         end
       end
+      alias :close :close!
 
       # get data at path, optionally enabling a watch on the node
       #

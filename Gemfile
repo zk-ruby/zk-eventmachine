@@ -5,7 +5,7 @@ source 'http://localhost:50000'
 # Specify your gem's dependencies in zk-em.gemspec
 gemspec
 
-git 'git://github.com/slyphon/zookeeper.git', :branch => 'dev/jruby-em' do
+git 'git://github.com/slyphon/zookeeper.git', :branch => 'dev/em' do
   gem 'slyphon-zookeeper', '~> 0.1.7'
 end
 
