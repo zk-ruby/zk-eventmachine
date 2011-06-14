@@ -27,6 +27,19 @@ module ZK::ZKEventMachine
           end
         end
       end
+
+      it %[should be able to be called mulitple times] do
+        em do
+          @zkem.connect do
+            logger.debug { "inside first callback" }
+            @zkem.connect do
+              logger.debug { "inside second callback" }
+              true.should be_true
+              @zkem.close! { done }
+            end
+          end
+        end
+      end
     end
 
     describe 'get' do
