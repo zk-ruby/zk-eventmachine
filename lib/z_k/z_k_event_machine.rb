@@ -1,9 +1,10 @@
-require 'zk'
-require 'rubygems'
 require 'eventmachine'
 
-require 'zookeeper' # wtf?
+require 'zookeeper'
 require 'zookeeper/em_client'
+
+require 'zk'
+
 
 module ZK
   module ZKEventMachine

@@ -6,7 +6,7 @@ source 'http://localhost:50000'
 gemspec
 
 git 'git://github.com/slyphon/zookeeper.git', :branch => 'dev/em' do
-  gem 'slyphon-zookeeper', '~> 0.1.7'
+  gem 'slyphon-zookeeper', '~> 0.2.0'
 end
 
 platform :jruby do
@@ -15,7 +15,7 @@ platform :jruby do
 end
 
 git 'git://github.com/slyphon/zk.git', :branch => 'dev/eventmachine' do
-  gem 'zk', '~> 0.8.0'
+  gem 'zk', '~> 0.8.1'
 end
 
 
