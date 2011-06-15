@@ -20,6 +20,7 @@ module ZK
       #
       class Base
         include Deferred
+        include ZK::Logging
 
         # set the result keys that should be used by node_style_result and to
         # call the deferred_style_result blocks
