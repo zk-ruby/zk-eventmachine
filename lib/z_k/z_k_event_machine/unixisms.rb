@@ -61,16 +61,20 @@ module ZK
                   when nil
                     abspaths = chldrn.map { |n| [path, n].join('/') }
                     Iterator.new(abspaths).each(
-                      lambda { |path,iter|  
-                        d = _rm_rf_dfr(path)
+                      lambda { |absp,iter|  
+                        d = _rm_rf_dfr(absp)
                         d.callback  { |*| 
+                          logger.debug { "removed #{absp}" }
                           iter.next
                         }
                         d.errback   { |e| 
+                          logger.debug { "got failure #{e.inspect}" }
                           my_dfr.fail(e)   # this will stop the iteration
                         }
                       },
-                      lambda { my_dfr.succeed }
+                      lambda { 
+                        my_dfr.chain_to(_rm_rf_dfr(path))
+                      }
                     )
                   else
                     my_dfr.fail(exc)

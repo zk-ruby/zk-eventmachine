@@ -24,6 +24,12 @@ module ZK
         errback(&block)
       end
 
+      def chain_to(other_dfr, opts={})
+        other_dfr.callback { |*a| self.succeed(*a) }
+        other_dfr.errback { |*a| self.fail(*a) } unless opts[:ignore_errors]
+        self
+      end
+
       class Default
         include ZK::ZKEventMachine::Deferred
       end
