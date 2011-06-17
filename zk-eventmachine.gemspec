@@ -8,11 +8,11 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Jonathan D. Simms"]
   s.email       = ["slyphon@hp.com"]
-  s.homepage    = ""
+  s.homepage    = "https://github.com/slyphon/zk-eventmachine"
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-#   s.add_dependency('zk', '~> 0.6.5')
+  s.add_dependency('zk', '~> 0.8.1')
   s.add_dependency('eventmachine', '= 0.12.10')
 
   s.add_development_dependency('rspec', '~> 2.5.0')
