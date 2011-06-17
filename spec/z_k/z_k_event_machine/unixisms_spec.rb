@@ -78,15 +78,20 @@ module ZK::ZKEventMachine
     end
 
     describe 'rm_rf' do
-      before do
-        @paths = ['blah/foo', 'blah/bar', 'blah/bar/one', 'blah/bar/two', 'blah/quux'].map { |n| File.join(@base_path, n) }
+      em_before do
+        @relpaths = ['disco/foo', 'prune/bar', 'fig/bar/one', 'apple/bar/two', 'orange/quux/c/d/e']
+
+        @roots = @relpaths.map { |p| File.join(@base_path, p.split('/').first) }.uniq
+        @paths = @relpaths.map { |n| File.join(@base_path, n) }
+
         @paths.each { |n| @zk.mkdir_p(n) }
       end
 
       it %[should remove the paths recursively] do
         em do
           @zkem.connect do
-            @zkem.rm_rf(@paths).callback do
+            @zkem.rm_rf(@roots).callback do
+              @roots.each { |p| @zk.exists?(p).should be_false }
               close_and_done!
             end.errback do |exc|
               raise exc
@@ -98,8 +103,9 @@ module ZK::ZKEventMachine
       it %[should use the nodejs style if a block is given] do
         em do
           @zkem.connect do
-            @zkem.rm_rf(@paths) do |exc|
+            @zkem.rm_rf(@roots) do |exc|
               if exc.nil?
+                @roots.each { |p| @zk.exists?(p).should be_false }
                 close_and_done!
               else
                 raise exc
