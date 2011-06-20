@@ -8,6 +8,10 @@ require 'zk'
 
 module ZK
   module ZKEventMachine
+    def self.new(host_str=nil)
+      host_str ||= 'localhost:2181'
+      Client.new(host_str)
+    end
   end
 end
 
