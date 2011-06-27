@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-  s.add_dependency('zk', '~> 0.8.2')
+  s.add_dependency('zk', '~> 0.8.3')
   s.add_dependency('eventmachine', '= 0.12.10')
 
   s.add_development_dependency('rspec', '~> 2.5.0')
