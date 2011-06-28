@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.description = s.description
 
   s.add_dependency('zk', '~> 0.8.3')
-  s.add_dependency('eventmachine', '= 0.12.10')
+  s.add_dependency('eventmachine', '>= 0.12.10')
 
   s.add_development_dependency('rspec', '~> 2.5.0')
   s.add_development_dependency('yard', '~> 0.7.0')
