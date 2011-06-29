@@ -1,17 +1,8 @@
-
-%w[lib ext].each do |dir|
-  $LOAD_PATH.unshift(File.expand_path("~/vendor/eventmachine/#{dir}")).uniq!
-end
 require 'eventmachine'
-
-$stderr.puts "$eventmachine_library: #{$eventmachine_library.inspect}"
-
-$LOAD_PATH.unshift(File.expand_path('~/zookeeper/lib')).uniq!
 
 require 'zookeeper'
 require 'zookeeper/em_client'
 
-$LOAD_PATH.unshift(File.expand_path('~/zk/lib')).uniq!
 require 'zk'
 
 
