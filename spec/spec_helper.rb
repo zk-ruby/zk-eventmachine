@@ -14,10 +14,10 @@ $stderr.sync = true
 
 case `uname -s`.chomp
 when 'Linux'
-  $stderr.puts "WARN: setting EM.epoll = true"
+  $stderr.puts "WARN: setting EM.epoll = true for tests"
   EM.epoll = true
 when 'Darwin'
-  $stderr.puts "WARN: setting EM.kqueue = true"
+  $stderr.puts "WARN: setting EM.kqueue = true for tests"
   EM.kqueue = true
 end
 
