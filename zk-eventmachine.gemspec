@@ -12,8 +12,11 @@ Gem::Specification.new do |s|
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-#   s.add_dependency('zk', '~> 0.8.3')
-#   s.add_dependency('eventmachine', '>= 0.12.10')
+  s.add_dependency('zk', '~> 0.8.3')
+
+  # zk depends on slyphon-zookeeper, but we need at least this version
+  s.add_dependency('slyphon-zookeeper', '~> 0.2.4')
+  s.add_dependency('eventmachine', '>= 0.12.10')
 
   s.add_development_dependency('rspec', '~> 2.5.0')
   s.add_development_dependency('yard', '~> 0.7.0')
