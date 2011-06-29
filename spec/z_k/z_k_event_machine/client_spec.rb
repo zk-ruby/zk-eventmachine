@@ -23,7 +23,10 @@ module ZK::ZKEventMachine
         em do
           @zkem.connect do
             true.should be_true
-            @zkem.close! { done }
+            @zkem.close! do 
+              logger.debug { "calling done" }
+              done
+            end
           end
         end
       end

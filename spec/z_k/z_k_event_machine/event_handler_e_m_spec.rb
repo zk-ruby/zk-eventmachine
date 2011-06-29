@@ -7,6 +7,7 @@ module ZK::ZKEventMachine
 
     before do
       @zk = ::ZK.new
+      logger.debug { "threaded client has client id: %0x" % [@zk.cnx.client_id] }
       @base_path = '/zk-em-testing'
       @zk.rm_rf(@base_path)
       @zk.mkdir_p(@base_path)
