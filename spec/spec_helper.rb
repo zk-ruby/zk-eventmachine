@@ -12,14 +12,14 @@ Dir[File.expand_path("../support/**/*.rb", __FILE__)].each {|f| require f}
 
 $stderr.sync = true
 
-# case `uname -s`.chomp
-# when 'Linux'
-#   $stderr.puts "WARN: setting EM.epoll = true"
-#   EM.epoll = true
-# when 'Darwin'
-#   $stderr.puts "WARN: setting EM.kqueue = true"
-#   EM.kqueue = true
-# end
+case `uname -s`.chomp
+when 'Linux'
+  $stderr.puts "WARN: setting EM.epoll = true"
+  EM.epoll = true
+when 'Darwin'
+  $stderr.puts "WARN: setting EM.kqueue = true"
+  EM.kqueue = true
+end
 
 RSpec.configure do |config|
   config.mock_with :flexmock

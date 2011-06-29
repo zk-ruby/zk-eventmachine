@@ -42,15 +42,15 @@ module ZK
         on_close(&blk)
 
         if @cnx
-          logger.debug { "#{self.class.name}: calling @cnx.close" }
-          logger.debug { "#{self.class.name}: @cnx.close callback fired, clearing event_handler" }
+          logger.debug { "#{self.class.name}: in close! clearing event_handler" }
           event_handler.clear!
 
-          @cnx.close
-          @cnx = nil
-
-          logger.debug { "firing on_close handler" }
-          on_close.succeed
+          logger.debug { "#{self.class.name}: calling @cnx.close" }
+          @cnx.close do
+            logger.debug { "firing on_close handler" }
+            on_close.succeed
+            @cnx = nil
+          end
         else
           on_close.succeed
         end
