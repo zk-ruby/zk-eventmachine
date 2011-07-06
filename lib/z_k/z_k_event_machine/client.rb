@@ -25,12 +25,7 @@ module ZK
       # ready for use
       def connect(&blk)
         # XXX: maybe move this into initialize, need to figure out how to schedule it properly
-        @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block).tap do |c|
-          c.on_attached do 
-            logger.debug { "connection is attached, client_id: %0x" % [c.client_id] }
-          end
-        end
-
+        @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
         @cnx.on_attached(&blk)
       end
 
