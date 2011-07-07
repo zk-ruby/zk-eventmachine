@@ -6,3 +6,4 @@ pkg/*
 .vimrc
 .rspec
 *.log
+.yardoc
