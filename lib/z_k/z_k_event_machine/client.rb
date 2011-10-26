@@ -12,6 +12,7 @@ module ZK
       def initialize(host, opts={})
         @host = host
         @close_deferred = Deferred::Default.new
+        @connection_lost_deferred = Deferred::Default.new
         @event_handler = EventHandlerEM.new(self)
       end
 
@@ -27,6 +28,18 @@ module ZK
         # XXX: maybe move this into initialize, need to figure out how to schedule it properly
         @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
         @cnx.on_attached(&blk)
+      end
+
+      # If we get a ZK::Exceptions::ConnectionLoss exeption back from any call,
+      # we will call back any handlers registered here with the exception
+      # instance as the argument
+      #
+      # once this deferred has been fired, it will be replaced with a new
+      # deferred, so callbacks must be re-registered
+      # 
+      def on_connection_lost(&blk)
+        @connection_lost_deferred.callback(&blk) if blk
+        @connection_lost_deferred
       end
 
       def reopen(*a)
@@ -61,18 +74,21 @@ module ZK
       #
       def get(path, opts={}, &block)
         Callback.new_get_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def create(path, data='', opts={}, &block)
         Callback.new_create_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, data, opts.merge(:callback => cb))
         end
       end
 
       def set(path, data, opts={}, &block)
         Callback.new_set_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, data, opts.merge(:callback => cb))
         end
       end
@@ -83,6 +99,7 @@ module ZK
         meth = :"new_#{cb_style}_cb"
 
         Callback.__send__(meth, block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -93,25 +110,37 @@ module ZK
 
       def delete(path, opts={}, &block)
         Callback.new_delete_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def children(path, opts={}, &block)
         Callback.new_children_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def get_acl(path, opts={}, &block)
         Callback.new_get_acl_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, opts.merge(:callback => cb))
         end
       end
 
       def set_acl(path, acls, opts={}, &block)
         Callback.new_set_acl_cb(block) do |cb|
+          cb.errback(&method(:connection_lost_hook))
           super(path, acls, opts.merge(:callback => cb))
+        end
+      end
+
+    protected
+      def connection_lost_hook(exc)
+        if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
+          dfr, @connection_lost_deferred = @connection_lost_deferred, Deferred::Default.new
+          dfr.succeed(exc)
         end
       end
     end

@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
 
   # zk depends on slyphon-zookeeper, but we need at least this version
   s.add_dependency('slyphon-zookeeper', '~> 0.2.4')
-  s.add_dependency('eventmachine', '>= 0.12.10')
+  s.add_dependency('eventmachine', '~> 1.0.0.beta.3')
 
   s.add_development_dependency('rspec', '~> 2.5.0')
   s.add_development_dependency('yard', '~> 0.7.0')

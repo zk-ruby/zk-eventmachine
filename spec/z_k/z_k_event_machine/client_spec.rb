@@ -45,6 +45,44 @@ module ZK::ZKEventMachine
       end
     end
 
+    describe 'on_connection_loss' do
+      before do
+        @path = [@base_path, 'foo'].join('/')
+        @data = 'this is data'
+        @zk.create(@path, @data)
+      end
+
+      it %[should be called back if the connection is lost] do
+        em do
+          @zkem.on_connection_lost do |exc|
+            logger.debug { "WIN!" }
+            exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+            @zkem.close! { done }
+          end
+
+          @zkem.connect do
+            flexmock(@zkem.cnx) do |m|
+              m.should_receive(:get).with(Hash).and_return do |hash|
+                logger.debug { "client received :get wtih #{hash.inspect}" }
+                @user_cb = hash[:callback]
+
+                EM.next_tick do
+                  logger.debug { "calling back user cb with connection loss" }
+                  @user_cb.call(:rc => ZK::Exceptions::CONNECTIONLOSS)
+                end
+
+                { :rc => Zookeeper::ZOK }
+              end
+            end
+
+            @zkem.get(@path) do |exc,data|
+              exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+            end
+          end
+        end
+      end
+    end
+
     describe 'get' do
       describe 'success' do
         before do
