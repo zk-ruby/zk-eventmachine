@@ -1,4 +1,5 @@
 require 'eventmachine'
+require 'em-synchrony'
 
 require 'zookeeper'
 require 'zookeeper/em_client'
@@ -20,5 +21,6 @@ require 'z_k/z_k_event_machine/callback'
 require 'z_k/z_k_event_machine/event_handler_e_m'
 require 'z_k/z_k_event_machine/unixisms'
 require 'z_k/z_k_event_machine/client'
+require 'z_k/z_k_event_machine/synchrony_client'
 
 
