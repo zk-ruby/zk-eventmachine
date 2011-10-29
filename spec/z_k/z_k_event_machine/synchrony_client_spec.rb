@@ -58,8 +58,9 @@ module ZK
 
         it %[should get the data and stat of a node that exists] do
           with_zksync do
-            data = @zksync.get(@base_path)
+            data, stat = @zksync.get(@base_path)
             data.should == @data
+            stat.should be_kind_of(ZookeeperStat::Stat)
           end
         end
 
@@ -85,7 +86,7 @@ module ZK
             stat.should be_instance_of(ZookeeperStat::Stat)
             stat.version.should > @orig_stat.version
 
-            @zksync.get(@path).should == @new_data
+            @zksync.get(@path).first.should == @new_data
           end
         end
 
@@ -157,6 +158,61 @@ module ZK
               stat.exists?.should be_false
               stat.should be_instance_of(ZookeeperStat::Stat)
             end
+          end
+        end
+      end
+
+      describe 'delete' do
+        it %[should delete the node] do
+          @path = [@base_path, 'foo'].join('/')
+          @data = 'this is data'
+          @zk.create(@path, @data)
+
+          with_zksync do
+            @zksync.delete(@path)
+          end
+
+          @zk.exists?(@path).should be_false
+        end
+
+        it %[should raise NoNode exception if the node does not exist] do
+          @path = [@base_path, 'foo'].join('/')
+          @zk.delete(@path) rescue ZK::Exceptions::NoNode
+
+          with_zksync do
+            lambda { @zksync.delete(@path) }.should raise_error(ZK::Exceptions::NoNode)
+          end
+        end
+      end
+
+      describe 'children' do
+        it %[should return the names of the children of the node] do
+          @path = [@base_path, 'foo'].join('/')
+          @child_1_path = [@path, 'child_1'].join('/')
+          @child_2_path = [@path, 'child_2'].join('/')
+
+          @data = 'this is data'
+          @zk.create(@path, @data)
+          @zk.create(@child_1_path, '')
+          @zk.create(@child_2_path, '')
+
+          with_zksync do
+            children, stat = @zksync.children(@path)
+            children.should be_kind_of(Array)
+            children.length.should == 2
+            children.should include('child_1')
+            children.should include('child_2')
+
+            stat.should be_instance_of(ZookeeperStat::Stat)
+          end
+        end
+
+        it %[should raise NoNode if the node doesn't exist] do
+          @path = [@base_path, 'foo'].join('/')
+          @zk.delete(@path) rescue ZK::Exceptions::NoNode
+
+          with_zksync do
+            lambda { @zksync.children(@path) }.should raise_error(ZK::Exceptions::NoNode)
           end
         end
       end
