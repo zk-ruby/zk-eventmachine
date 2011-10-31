@@ -1,24 +1,32 @@
 module ZK
   module ZKEventMachine
-    class SynchronyClient < Client
+    # This class is an EM::Synchrony wrapper around a ZK::ZKEventMachine::Client
+    class SynchronyClient
+      # @overload new(client_instance)
+      #   Wrap an existing ZK::ZKEventMachine::Client instance in an
+      #   EM::Synchrony compatible way
+      #   @param [ZK::ZKEventMachine::Client] client_instance an instance of Client to wrap
+      # @overload new(host, opts={})
+      #   Creates a new ZK::ZKEventMachine::Client instance to manage
+      #   takes the same arguments as ZK::Client::Base
+      def initialize(host, opts={})
+        case host
+        when Client
+          @client = host
+        when String
+          @client = Client.new(host, opts)
+        else
+          raise ArgumentError, "argument must be either a ZK::ZKEventMachine::Client instance or a hostname:port string"
+        end
+      end
 
-      %w[connect close close! get set create stat delete children get_acl set_acl].each do |meth|
-        ameth_name = :"a#{meth}"
-
-        alias_method(ameth_name, meth.to_sym) unless method_defined?(ameth_name)
-
+      %w[connect close close! get set create stat delete children get_acl set_acl mkdir_p rm_rf].each do |meth|
         class_eval(<<-EOMETH, __FILE__, __LINE__ + 1)
           def #{meth}(*args,&blk)
-            logger.debug { "calling a#{meth}" }
-            deferred = a#{meth}(*args, &blk)
-            logger.debug { "EM::Synchrony.sync(\#{deferred.inspect})" }
-
-            sync!(deferred)
+            sync!(@client.#{meth}(*args, &blk))
           end
         EOMETH
       end
-
-      alias_method(:aexists?, :exists?) unless method_defined?(:aexists?)
 
       def exists?(path, opts={})
         stat(path, opts={}).exists?

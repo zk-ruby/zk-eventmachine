@@ -248,6 +248,41 @@ module ZK
           end
         end
       end
+
+      describe 'mkdir_p' do
+        it %[should create the directory structure] do
+          paths = [ "#{@base_path}/bar/baz", "#{@base_path}/foo/bar/quux" ]
+
+          with_zksync do
+            @zksync.mkdir_p(paths)
+          end
+
+          @zk.exists?("#{@base_path}/bar").should be_true
+          @zk.exists?("#{@base_path}/bar/baz").should be_true
+          @zk.exists?("#{@base_path}/foo").should be_true
+          @zk.exists?("#{@base_path}/foo/bar").should be_true
+          @zk.exists?("#{@base_path}/foo/bar/quux").should be_true
+        end
+      end
+
+      describe 'rm_rf' do
+        it %[should remove all paths listed] do
+          @relpaths = ['disco/foo', 'prune/bar', 'fig/bar/one', 'apple/bar/two', 'orange/quux/c/d/e']
+
+          @roots = @relpaths.map { |p| File.join(@base_path, p.split('/').first) }.uniq
+          @paths = @relpaths.map { |n| File.join(@base_path, n) }
+
+          @paths.each { |n| @zk.mkdir_p(n) }
+
+          with_zksync do
+            @zksync.rm_rf(@roots)
+          end
+
+          @roots.each { |n| @zk.exists?(n).should be_false }
+
+          @zk.exists?(@base_path).should be_true
+        end
+      end
     end
   end
 end
