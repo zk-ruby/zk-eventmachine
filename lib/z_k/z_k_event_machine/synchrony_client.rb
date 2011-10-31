@@ -1,6 +1,11 @@
 module ZK
   module ZKEventMachine
     # This class is an EM::Synchrony wrapper around a ZK::ZKEventMachine::Client
+    #
+    # It should behave exactly like a ZK::Client instance (when called in a
+    # synchronous fashion), and one should look there for documentation about
+    # the various methods
+    #
     class SynchronyClient
       # @overload new(client_instance)
       #   Wrap an existing ZK::ZKEventMachine::Client instance in an
