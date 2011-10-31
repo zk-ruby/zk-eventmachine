@@ -71,6 +71,38 @@ module ZK
         end
       end
 
+      describe 'create' do
+        describe 'success' do
+          before do
+            @path = [@base_path, 'foo'].join('/')
+            @zk.delete(@path) rescue ZK::Exceptions::NoNode
+
+            @data = 'this is data'
+          end
+
+          it 'should create a non-sequence node' do
+            with_zksync do
+              @zksync.create(@path, @data).should == @path
+            end
+          end
+
+          it %[should create a sequence node] do
+            with_zksync do
+              @zksync.create(@path, @data, :sequence => true).should =~ /\A#{@path}\d+\Z/
+            end
+          end
+        end
+        
+        describe 'failure' do
+          it %[should barf if the node exists] do
+            @path = [@base_path, 'foo'].join('/')
+            @zk.create(@path, '')
+
+            lambda { @zk.create(@path, '') }.should raise_error(ZK::Exceptions::NodeExists)
+          end
+        end
+      end
+
       describe 'set' do
         before do
           @path = [@base_path, 'foo'].join('/')
