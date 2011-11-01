@@ -32,6 +32,12 @@ module ZK
         @cnx.on_attached(&blk)
       end
 
+      # @private
+      # XXX: move this down into ZK::Client::Base
+      def connected?
+        @cnx and @cnx.connected?
+      end
+
       # If we get a ZK::Exceptions::ConnectionLoss exeption back from any call,
       # we will call back any handlers registered here with the exception
       # instance as the argument

@@ -283,6 +283,56 @@ module ZK
           @zk.exists?(@base_path).should be_true
         end
       end
+
+      describe 'event delivery' do
+        default_timeout 0.5
+
+        before do
+          @path = [@base_path, 'foo'].join('/')
+          @data = 'this is data'
+          @zk.create(@path, @data)
+          @orig_stat = @zk.stat(@path)
+        end
+
+        it %[should receive an event when the node changes] do
+          em_synchrony do
+            @orig_fiber = Fiber.current
+
+            @zksync.connect
+            @zksync.should be_connected
+
+            @zksync.event_handler.register(@path) do |event|
+              Fiber.current.should_not == @orig_fiber
+
+              done { @zksync.close! }
+            end
+
+            @zksync.get(@path, :watch => true)
+
+            stat = @zksync.set(@path, 'new data')
+            logger.debug { "sksync set returned: #{stat}" }
+          end
+        end
+
+        it %[should be able to register for events on a node that doesn't exist yet] do
+          em_synchrony do
+            @new_path = "#{@path}/blah"
+
+            @zksync.connect
+            @zksync.should be_connected
+
+            @zksync.event_handler.register(@new_path) do |event|
+              logger.debug { "got event #{event}" }
+
+              done { @zksync.close! }
+            end
+
+            @zksync.stat(@new_path, :watch => true)
+
+            @zksync.create(@new_path, '')
+          end
+        end
+      end
     end
   end
 end

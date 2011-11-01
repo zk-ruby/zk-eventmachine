@@ -1,13 +1,16 @@
 module ZK
   module ZKEventMachine
     class SynchronyEventHandlerWrapper
+      include ZK::Logging
+
       def initialize(event_handler)
         @event_handler = event_handler
       end
 
+      # registers a block to be called back within a fiber context
       def register(path, &block)
         new_block = proc do |*a|
-          Fiber.new { block.call }.resume
+          Fiber.new { block.call(*a) }.resume
         end
 
         @event_handler.register(path, &new_block)
@@ -31,6 +34,8 @@ module ZK
     #   synchrony didn't work in this case.
     #
     class SynchronyClient
+      include ZK::Logging
+
       attr_reader :event_handler, :client
 
       # @overload new(client_instance)
