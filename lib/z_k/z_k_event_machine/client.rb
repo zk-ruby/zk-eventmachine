@@ -6,7 +6,9 @@ module ZK
 
       DEFAULT_TIMEOUT = 10
 
-      attr_reader :client
+      # allows the synchrony client to muck with this
+      # @private
+      attr_writer :event_handler
 
       # Takes same options as ZK::Client::Base
       def initialize(host, opts={})

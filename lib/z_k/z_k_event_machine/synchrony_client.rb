@@ -1,12 +1,38 @@
 module ZK
   module ZKEventMachine
+    class SynchronyEventHandlerWrapper
+      def initialize(event_handler)
+        @event_handler = event_handler
+      end
+
+      def register(path, &block)
+        new_block = proc do |*a|
+          Fiber.new { block.call }.resume
+        end
+
+        @event_handler.register(path, &new_block)
+      end
+
+      private
+        def method_missing(meth, *a, &b)
+          @event_handler.__send__(meth, *a, &b)
+        end
+    end
+
     # This class is an EM::Synchrony wrapper around a ZK::ZKEventMachine::Client
     #
     # It should behave exactly like a ZK::Client instance (when called in a
     # synchronous fashion), and one should look there for documentation about
     # the various methods
     #
+    # @note this class is implemented as a wrapper instead of a subclass of Client
+    #   so that it can support the unixisms like rm_rf and mkdir_p. The
+    #   synchrony pattern of aliasing the base class methods and specializing for 
+    #   synchrony didn't work in this case.
+    #
     class SynchronyClient
+      attr_reader :event_handler, :client
+
       # @overload new(client_instance)
       #   Wrap an existing ZK::ZKEventMachine::Client instance in an
       #   EM::Synchrony compatible way
@@ -23,6 +49,8 @@ module ZK
         else
           raise ArgumentError, "argument must be either a ZK::ZKEventMachine::Client instance or a hostname:port string"
         end
+
+        @event_handler = SynchronyEventHandlerWrapper.new(@client.event_handler)
       end
 
       %w[connect close close! get set create stat delete children get_acl set_acl mkdir_p rm_rf].each do |meth|
@@ -31,6 +59,11 @@ module ZK
             sync!(@client.#{meth}(*args, &blk))
           end
         EOMETH
+      end
+
+      # @deprecated for backwards compatibility only
+      def watcher
+        event_handler
       end
 
       def exists?(path, opts={})
@@ -61,6 +94,11 @@ module ZK
           rval = sync(deferred)
           raise rval if rval.kind_of?(Exception)
           rval
+        end
+
+      private
+        def method_missing(meth, *a, &b)
+          @client.__send__(meth, *a, &b)
         end
     end
   end
