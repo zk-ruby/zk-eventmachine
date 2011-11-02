@@ -75,6 +75,16 @@ module ZK
         stat(path, opts={}).exists?
       end
 
+      # returns self
+      def to_synchrony_client
+        self
+      end
+
+      # returns the wrapped async client
+      def to_async_client
+        @client
+      end
+
       protected
         # a modification of EM::Synchrony.sync to handle multiple callback arguments properly
         def sync(df)

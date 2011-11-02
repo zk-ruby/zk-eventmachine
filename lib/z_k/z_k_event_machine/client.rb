@@ -144,6 +144,16 @@ module ZK
         end
       end
 
+      # returns an EM::Synchrony compatible wrapper around this client
+      def to_synchrony_client
+        @synchrony_client ||= SynchronyClient.new(self)
+      end
+
+      # returns self
+      def to_async_client
+        self
+      end
+
     protected
       def connection_lost_hook(exc)
         if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
