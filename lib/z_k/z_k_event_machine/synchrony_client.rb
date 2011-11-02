@@ -76,12 +76,12 @@ module ZK
       end
 
       # returns self
-      def to_synchrony_client
+      def to_synchrony
         self
       end
 
       # returns the wrapped async client
-      def to_async_client
+      def to_async
         @client
       end
 

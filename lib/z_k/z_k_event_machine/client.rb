@@ -145,12 +145,12 @@ module ZK
       end
 
       # returns an EM::Synchrony compatible wrapper around this client
-      def to_synchrony_client
+      def to_synchrony
         @synchrony_client ||= SynchronyClient.new(self)
       end
 
       # returns self
-      def to_async_client
+      def to_async
         self
       end
 
