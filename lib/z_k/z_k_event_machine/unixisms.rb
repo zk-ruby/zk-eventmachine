@@ -3,7 +3,7 @@ module ZK
     module Unixisms
       def mkdir_p(paths, &block)
         dfr = Deferred::Default.new.tap do |my_dfr|
-          Iterator.new(Array(paths).flatten.compact, 1).map(
+          EM::Iterator.new(Array(paths).flatten.compact, 1).map(
             lambda { |path,iter|          # foreach
               d = _mkdir_p_dfr(path)
               d.callback { |p| iter.return(p) }
@@ -18,7 +18,7 @@ module ZK
 
       def rm_rf(paths, &blk)
         dfr = Deferred::Default.new.tap do |my_dfr|
-          Iterator.new(Array(paths).flatten.compact, 1).each(
+          EM::Iterator.new(Array(paths).flatten.compact, 1).each(
             lambda { |path,iter|          # foreach
               d = _rm_rf_dfr(path)
               d.callback { iter.next }
@@ -60,7 +60,7 @@ module ZK
                     my_dfr.succeed
                   when nil
                     abspaths = chldrn.map { |n| [path, n].join('/') }
-                    Iterator.new(abspaths).each(
+                    EM::Iterator.new(abspaths).each(
                       lambda { |absp,iter|  
                         d = _rm_rf_dfr(absp)
                         d.callback  { |*| 
