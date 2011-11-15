@@ -8,7 +8,7 @@ module ZK
 
       # allows the synchrony client to muck with this
       # @private
-      attr_writer :event_handler
+      attr_writer :event_handler, :synchrony_client
 
       # Takes same options as ZK::Client::Base
       def initialize(host, opts={})

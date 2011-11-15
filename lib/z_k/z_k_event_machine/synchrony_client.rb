@@ -55,6 +55,8 @@ module ZK
           raise ArgumentError, "argument must be either a ZK::ZKEventMachine::Client instance or a hostname:port string"
         end
 
+        @client.synchrony_client = self
+
         @event_handler = SynchronyEventHandlerWrapper.new(@client.event_handler)
       end
 
