@@ -58,10 +58,22 @@ module ZK
         @event_handler = SynchronyEventHandlerWrapper.new(@client.event_handler)
       end
 
-      %w[connect close close! get set create stat delete children get_acl set_acl mkdir_p rm_rf].each do |meth|
+      %w[connect get set create stat delete children get_acl set_acl mkdir_p rm_rf].each do |meth|
         class_eval(<<-EOMETH, __FILE__, __LINE__ + 1)
           def #{meth}(*args,&blk)
             sync!(@client.#{meth}(*args, &blk))
+          end
+        EOMETH
+      end
+
+      # it is *crucially* important that close and close! be wrapped in a fiber.
+      # it's possible under very odd corner cases with the 1.9.3 GC to cause a
+      # '[BUG] cfp consistency error - send'
+      #
+      %w[close close!].each do |meth|
+        class_eval(<<-EOMETH, __FILE__, __LINE__ + 1)
+          def #{meth}(*args,&blk)
+            Fiber.new { sync!(@client.#{meth}(*args, &blk)) }.resume
           end
         EOMETH
       end

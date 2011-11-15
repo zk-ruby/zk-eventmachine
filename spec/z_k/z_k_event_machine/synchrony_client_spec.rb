@@ -29,7 +29,8 @@ module ZK
         @base_path = '/zk-em-testing'
         @zk.rm_rf(@base_path)
         @zk.mkdir_p(@base_path)
-        @zksync = ZK::ZKEventMachine::SynchronyClient.new('localhost:2181')
+#         $stderr.puts "zk obj_id: %x" % [@zk.object_id]
+        @zksync = ZK::ZKEventMachine::SynchronyClient.new('localhost:2181', :zkc_log_level => 4)
       end
 
       after do
@@ -324,6 +325,8 @@ module ZK
             @zksync.event_handler.register(@new_path) do |event|
               logger.debug { "got event #{event}" }
 
+              # without close! wrapping itself in Fiber.new, this causes a
+              # '[BUG] cfp consistency error - send' under 1.9.3 
               done { @zksync.close! }
             end
 

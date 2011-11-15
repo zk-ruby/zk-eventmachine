@@ -6,7 +6,6 @@ require 'zookeeper/em_client'
 
 require 'zk'
 
-
 module ZK
   module ZKEventMachine
   end

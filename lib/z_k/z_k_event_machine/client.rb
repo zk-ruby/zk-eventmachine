@@ -29,6 +29,9 @@ module ZK
       def connect(&blk)
         # XXX: maybe move this into initialize, need to figure out how to schedule it properly
         @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
+#         @cnx.on_attached do
+#           $stderr.puts "@cnx, obj_id: %x" % [@cnx.object_id]
+#         end
         @cnx.on_attached(&blk)
       end
 
@@ -63,8 +66,11 @@ module ZK
 
           logger.debug { "#{self.class.name}: calling @cnx.close" }
           @cnx.close do
-            logger.debug { "firing on_close handler" }
-            on_close.succeed
+            # fire the on_close handler in next_tick so that @cnx is nil
+            EM.next_tick do
+              logger.debug { "firing on_close handler" }
+              on_close.succeed
+            end
             @cnx = nil
           end
         else
