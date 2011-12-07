@@ -1,6 +1,8 @@
 module ZK
   module ZKEventMachine
     module Unixisms
+      include CallingConvention
+
       def mkdir_p(paths, &block)
         dfr = Deferred::Default.new.tap do |my_dfr|
           EM::Iterator.new(Array(paths).flatten.compact, 1).map(
@@ -13,7 +15,7 @@ module ZK
           )
         end
 
-        _handle_calling_convention(dfr, &block)
+        handle_calling(dfr, &block)
       end
 
       def rm_rf(paths, &blk)
@@ -28,7 +30,7 @@ module ZK
           )
         end
 
-        _handle_calling_convention(dfr, &blk)
+        handle_calling(dfr, &blk)
       end
 
       def find(*paths, &block)
@@ -40,13 +42,6 @@ module ZK
       end
 
       protected
-        def _handle_calling_convention(dfr, &blk)
-          return dfr unless blk
-          dfr.callback { |*a| blk.call(nil, *a) }
-          dfr.errback { |exc| blk.call(exc) }
-          dfr
-        end
-
         def _rm_rf_dfr(path)
           Deferred::Default.new.tap do |my_dfr|
             delete(path) do |exc|
