@@ -12,7 +12,9 @@ Gem::Specification.new do |s|
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-  s.add_dependency('zk', '~> 0.8.5')
+  unless File.exists?(File.expand_path('../zk', __FILE__))
+    s.add_dependency('zk', '~> 0.8.5')
+  end
 
   # zk depends on slyphon-zookeeper, but we need at least this version
   s.add_dependency('slyphon-zookeeper', '~> 0.2.4')

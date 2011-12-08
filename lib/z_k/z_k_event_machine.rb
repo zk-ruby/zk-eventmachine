@@ -4,6 +4,12 @@ require 'em-synchrony'
 require 'zookeeper'
 require 'zookeeper/em_client'
 
+zk_subm_path = File.expand_path('../../../zk', __FILE__)
+
+if File.exists?(zk_subm_path)
+  $LOAD_PATH.unshift(File.join(zk_subm_path, 'lib'))
+end
+
 require 'zk'
 
 module ZK
