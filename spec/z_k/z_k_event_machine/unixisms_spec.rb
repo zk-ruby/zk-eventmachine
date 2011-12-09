@@ -18,8 +18,93 @@ module ZK::ZKEventMachine
       @zk.close!
     end
 
+    def start_and_connect
+      em do
+        @zkem.connect { yield }
+      end
+    end
+
     def close_and_done!
       @zkem.close! { done }
+    end
+
+    describe 'defer_until_node_deleted' do
+      before do
+        @node_path = File.join(@base_path, 'watched')
+      end
+
+      describe 'succeed' do
+        it %[should if the node doesn't exist] do
+          @zk.exists?(@node_path).should be_false
+
+          start_and_connect do
+            @zkem.defer_until_node_deleted(@node_path).tap do |d|
+              d.callback { close_and_done! }
+              d.errback { |exc| raise exc }
+            end
+          end
+        end
+
+        it %[should callback when the node is deleted] do
+          @zk.create(@node_path, '', :ephemeral => true)
+
+          start_and_connect do
+            @zkem.defer_until_node_deleted(@node_path).tap do |d|
+              d.callback { close_and_done! }
+              d.errback { |e| raise e }
+            end
+
+            EM.next_tick do
+              @zkem.delete(@node_path).errback { |e| raise e }
+            end
+          end
+        end
+
+        # there is a tricky race-condition that i'm 99% sure is covered by
+        # the pattern we've consitently been following, but we should attempt 
+        # to write tests to cover every branch
+      end
+    end
+
+    describe 'block_until_node_deleted' do
+      include FiberHelper
+      include ZK::Logging
+
+      before do
+        @node_path = File.join(@base_path, 'watched')
+      end
+
+      it %[should succeed if the node doesn't exist] do
+        @zk.exists?(@node_path).should be_false
+
+        start_and_connect do
+          ensure_fiber do
+            @zkem.block_until_node_deleted(@node_path)
+            close_and_done!
+          end
+        end
+      end
+
+      it %[should wait until the node is deleted and then return] do
+        @zk.create(@node_path, '', :ephemeral => true)
+
+        start_and_connect do
+          EM.add_timer(0.1) do
+            logger.info { "timer fired!" }
+            @zkem.delete(@node_path).callback do
+              logger.info { "deleted node #{@node_path}" }
+            end.errback { |e| raise e }
+          end
+
+          ensure_fiber do
+            logger.info { "waiting until #{@node_path} is deleted" }
+            @zkem.block_until_node_deleted(@node_path)
+            logger.info { "returned from block_until_node_deleted" }
+            @zk.exists?(@node_path).should be_false
+            close_and_done!
+          end
+        end
+      end
     end
 
     describe 'mkdir_p' do

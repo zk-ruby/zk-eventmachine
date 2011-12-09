@@ -16,9 +16,6 @@ module ZK
         include ZK::Logging
         include FiberHelper
 
-        # TODO, move ROOT_LOCK_NODE into ZK
-        ROOT_LOCK_NODE = "/_zklocking"
-
         # @private
         def self.digit_from_lock_path(path) #:nodoc:
           path[/0*(\d+)$/, 1].to_i

@@ -2,6 +2,7 @@ module ZK
   module ZKEventMachine
     module Unixisms
       include CallingConvention
+      include FiberHelper
 
       def mkdir_p(paths, &block)
         dfr = Deferred::Default.new.tap do |my_dfr|
@@ -37,8 +38,69 @@ module ZK
         raise NotImplementedError, "Coming soon"
       end
 
+      class NodeDeletionDeferred
+        include Deferred
+
+        # The ZK::EventHandlerSubscription instance that we use for watching
+        # for changes to the target node. We hold a reference here so that we
+        # can cancel this in callbacks
+        attr_accessor :subscription
+      end
+      
+      # Will "block" the caller until the node is deleted. Synchrony/Fibers
+      # will be used to provide the illusion of blocking semantics. Will raise
+      # any exceptions that occur.
       def block_until_node_deleted(abs_node_path)
-        raise NotImplementedError, "blocking does not make sense in EventMachine-land"
+        ensure_fiber do
+          sync!(defer_until_node_deleted(abs_node_path))
+        end
+      end
+
+      # Returns a deferred that will fire when abs_node_path is deleted.
+      # If abs_node_path does not exist when called, we succeed.
+      #
+      def defer_until_node_deleted(abs_node_path)
+        NodeDeletionDeferred.new.tap do |nd_dfr|
+          existence_check = proc do
+            d = exists?(abs_node_path, :watch => true)
+            d.callback do |node_exists|   # see if the node exists, set a watch (this method will be called)
+              if node_exists              # if the node exists now, we have set a watch already
+                logger.debug { "#{abs_node_path} exists, no-op wait for watch" }
+              else
+                logger.debug { "#{abs_node_path} does not exist, we succeed" }
+                nd_dfr.succeed            # the node was deleted behind our back, success
+              end
+            end
+            d.errback do |exc|
+              nd_dfr.fail(exc)
+            end
+          end
+
+          node_deletion_cb = lambda do |event|
+            logger.debug { "node_deletion_cb received event: #{event.inspect}" }
+
+            if event.node_deleted?
+              # node deleted event received, success
+              logger.debug { "node #{abs_node_path} was deleted, success!" }
+              nd_dfr.succeed
+            else
+              logger.debug { "other node event, re-check" }
+              existence_check.call
+            end
+          end
+
+          nd_dfr.subscription = watcher.register(abs_node_path, &node_deletion_cb)
+
+          # clean up the subscription
+          nd_dfr.ensure_that do |*|
+            if nd_dfr.subscription
+              logger.debug { "cleaning up event subscription for #{abs_node_path}" }
+              nd_dfr.subscription.unregister 
+            end
+          end
+
+          existence_check.call
+        end
       end
 
       protected
