@@ -6,8 +6,6 @@ module ZK
 
       DEFAULT_TIMEOUT = 10
 
-      attr_reader :client
-
       # Takes same options as ZK::Client::Base
       def initialize(host, opts={})
         @host = host
@@ -26,7 +24,10 @@ module ZK
       # ready for use
       def connect(&blk)
         # XXX: maybe move this into initialize, need to figure out how to schedule it properly
-        @cnx ||= ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
+        @cnx ||= (
+          event_handler.register_state_handler(Zookeeper::ZOO_EXPIRED_SESSION_STATE, &method(:handle_expired_session_state_event!))
+          ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
+        )
         @cnx.on_attached(&blk)
       end
 
@@ -137,6 +138,12 @@ module ZK
       end
 
     protected
+      def handle_expired_session_state_event!(event)
+        exc = ZK::Exceptions::ConnectionLoss.new("Received EXPIRED_SESSION_STATE event: #{event.inspect}")
+        exc.set_backtrace(caller)
+        connection_lost_hook(exc)
+      end
+
       def connection_lost_hook(exc)
         if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
           dfr, @connection_lost_deferred = @connection_lost_deferred, Deferred::Default.new

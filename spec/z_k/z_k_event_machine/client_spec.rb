@@ -81,6 +81,27 @@ module ZK::ZKEventMachine
           end
         end
       end
+
+      it %[should be called if we get a session expired event] do
+        @zkem.on_connection_lost do |exc|
+          logger.debug { "WIN!" }
+          exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+          @zkem.close! { done }
+        end
+
+        em do
+          @zkem.connect do
+            event = flexmock(:event).tap do |ev|
+              ev.should_receive(:node_event?).and_return(false)
+              ev.should_receive(:state_event?).and_return(true)
+              ev.should_receive(:zk=).with_any_args
+              ev.should_receive(:state).and_return(Zookeeper::ZOO_EXPIRED_SESSION_STATE)
+            end
+
+            EM.next_tick { @zkem.event_handler.process(event) }
+          end
+        end
+      end
     end
 
     describe 'get' do
