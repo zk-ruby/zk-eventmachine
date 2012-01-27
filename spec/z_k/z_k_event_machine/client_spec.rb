@@ -750,6 +750,31 @@ module ZK::ZKEventMachine
         it %[should have NoNode as the first argument to the block] 
       end # failure
     end # set_acl
+
+    describe 'session_id and session_passwd' do
+      it %[should return a Fixnum for session_id once connected] do
+        em do
+          @zkem.session_id.should be_nil
+
+          @zkem.connect do
+            @zkem.session_id.should be_kind_of(Fixnum)
+            @zkem.close! { done }
+          end
+        end
+      end
+
+      it %[should return a String for session_passwd once connected] do
+        em do
+          @zkem.session_passwd.should be_nil
+
+
+          @zkem.connect do
+            @zkem.session_passwd.should be_kind_of(String)
+            @zkem.close! { done }
+          end
+        end
+      end
+    end
   end # Client
 end # ZK::ZKEventMachine
 

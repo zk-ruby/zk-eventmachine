@@ -137,6 +137,16 @@ module ZK
         end
       end
 
+      def session_id
+        return nil unless @cnx
+        @cnx.session_id
+      end
+
+      def session_passwd
+        return nil unless @cnx
+        @cnx.session_passwd
+      end
+
     protected
       def handle_expired_session_state_event!(event)
         exc = ZK::Exceptions::ConnectionLoss.new("Received EXPIRED_SESSION_STATE event: #{event.inspect}")
