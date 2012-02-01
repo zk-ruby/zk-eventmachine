@@ -31,15 +31,18 @@ module ZK
         _handle_calling_convention(dfr, &blk)
       end
 
+      # @private
       def find(*paths, &block)
         raise NotImplementedError, "Coming soon"
       end
 
+      # @private
       def block_until_node_deleted(abs_node_path)
         raise NotImplementedError, "blocking does not make sense in EventMachine-land"
       end
 
       protected
+        # @private
         def _handle_calling_convention(dfr, &blk)
           return dfr unless blk
           dfr.callback { |*a| blk.call(nil, *a) }
@@ -47,6 +50,7 @@ module ZK
           dfr
         end
 
+        # @private
         def _rm_rf_dfr(path)
           Deferred::Default.new.tap do |my_dfr|
             delete(path) do |exc|
@@ -85,6 +89,7 @@ module ZK
           end
         end
 
+        # @private
         def _mkdir_p_dfr(path)
           Deferred::Default.new.tap do |my_dfr|
             d = create(path, '')

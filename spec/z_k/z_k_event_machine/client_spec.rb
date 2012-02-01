@@ -18,6 +18,15 @@ module ZK::ZKEventMachine
       @zk.close!
     end
 
+    def event_mock(name=:event)
+      flexmock(name).tap do |ev|
+        ev.should_receive(:node_event?).and_return(false)
+        ev.should_receive(:state_event?).and_return(true)
+        ev.should_receive(:zk=).with_any_args
+        yield ev if block_given?
+      end
+    end
+
     describe 'connect' do
       it %[should return a deferred that fires when connected and then close] do
         em do
@@ -45,64 +54,6 @@ module ZK::ZKEventMachine
       end
     end
 
-    describe 'on_connection_loss' do
-      before do
-        @path = [@base_path, 'foo'].join('/')
-        @data = 'this is data'
-        @zk.create(@path, @data)
-      end
-
-      it %[should be called back if the connection is lost] do
-        em do
-          @zkem.on_connection_lost do |exc|
-            logger.debug { "WIN!" }
-            exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
-            @zkem.close! { done }
-          end
-
-          @zkem.connect do
-            flexmock(@zkem.cnx) do |m|
-              m.should_receive(:get).with(Hash).and_return do |hash|
-                logger.debug { "client received :get wtih #{hash.inspect}" }
-                @user_cb = hash[:callback]
-
-                EM.next_tick do
-                  logger.debug { "calling back user cb with connection loss" }
-                  @user_cb.call(:rc => ZK::Exceptions::CONNECTIONLOSS)
-                end
-
-                { :rc => Zookeeper::ZOK }
-              end
-            end
-
-            @zkem.get(@path) do |exc,data|
-              exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
-            end
-          end
-        end
-      end
-
-      it %[should be called if we get a session expired event] do
-        @zkem.on_connection_lost do |exc|
-          logger.debug { "WIN!" }
-          exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
-          @zkem.close! { done }
-        end
-
-        em do
-          @zkem.connect do
-            event = flexmock(:event).tap do |ev|
-              ev.should_receive(:node_event?).and_return(false)
-              ev.should_receive(:state_event?).and_return(true)
-              ev.should_receive(:zk=).with_any_args
-              ev.should_receive(:state).and_return(Zookeeper::ZOO_EXPIRED_SESSION_STATE)
-            end
-
-            EM.next_tick { @zkem.event_handler.process(event) }
-          end
-        end
-      end
-    end
 
     describe 'get' do
       describe 'success' do
@@ -287,7 +238,6 @@ module ZK::ZKEventMachine
         end
       end # failure
     end # create
-
 
     describe 'set' do
       describe 'success' do
@@ -775,6 +725,96 @@ module ZK::ZKEventMachine
         end
       end
     end
+
+    describe 'on_connection_lost' do
+      before do
+        @path = [@base_path, 'foo'].join('/')
+        @data = 'this is data'
+        @zk.create(@path, @data)
+      end
+
+      it %[should be called back if the connection is lost] do
+        em do
+          @zkem.on_connection_lost do |exc|
+            logger.debug { "WIN!" }
+            exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+            @zkem.close! { done }
+          end
+
+          @zkem.connect do
+            flexmock(@zkem.cnx) do |m|
+              m.should_receive(:get).with(Hash).and_return do |hash|
+                logger.debug { "client received :get wtih #{hash.inspect}" }
+                @user_cb = hash[:callback]
+
+                EM.next_tick do
+                  logger.debug { "calling back user cb with connection loss" }
+                  @user_cb.call(:rc => ZK::Exceptions::CONNECTIONLOSS)
+                end
+
+                { :rc => Zookeeper::ZOK }
+              end
+            end
+
+            @zkem.get(@path) do |exc,data|
+              exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+            end
+          end
+        end
+      end
+
+      it %[should be called if we get a session expired event] do
+        @zkem.on_connection_lost do |exc|
+          logger.debug { "WIN!" }
+          exc.should be_kind_of(ZK::Exceptions::ConnectionLoss)
+          @zkem.close! { done }
+        end
+
+        em do
+          @zkem.connect do
+            event = event_mock(:connection_loss_event).tap do |ev|
+              ev.should_receive(:state).and_return(Zookeeper::ZOO_EXPIRED_SESSION_STATE)
+            end
+
+            EM.next_tick { @zkem.event_handler.process(event) }
+          end
+        end
+      end
+    end # on_connection_lost
+
+    describe 'on_connected' do
+      it %[should be called back when a ZOO_CONNECTED_STATE event is received] do
+        em do
+          @zkem.on_connected do |event|
+            logger.debug { "WIN!" }
+            @zkem.close! { done }
+          end
+
+          @zkem.connect do
+            logger.debug { "we connected" }
+          end
+        end
+      end
+    end # on_connected
+
+    describe 'on_connecting' do
+      it %[should be called back when a ZOO_CONNECTING_STATE event is received] do
+        @zkem.on_connecting do |event|
+          logger.debug { "WIN!" }
+          @zkem.close! { done }
+        end
+
+        em do
+          @zkem.connect do
+            event = event_mock(:connecting_event).tap do |ev|
+              ev.should_receive(:state).and_return(Zookeeper::ZOO_CONNECTING_STATE)
+            end
+
+            EM.next_tick { @zkem.event_handler.process(event) }
+          end
+        end
+      end
+    end # on_connecting
   end # Client
 end # ZK::ZKEventMachine
 

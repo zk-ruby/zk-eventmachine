@@ -40,6 +40,12 @@ module ZK
       # @return [Deferred::Default]
       deferred_event :connected
 
+      # Registers a one-shot callback for the ZOO_CONNECTING_STATE event
+      #
+      # This event is triggered when we have become disconnected from the
+      # cluster and are in the process of reconnecting.
+      deferred_event :connecting
+
       # called back once the connection has been closed.
       #
       # @method on_close
@@ -65,6 +71,7 @@ module ZK
         @cnx.on_attached(&blk)
       end
 
+      # @private
       def reopen(*a)
         raise NotImplementedError, "reoopen is not implemented for the eventmachine version of the client"
       end
@@ -173,22 +180,32 @@ module ZK
         @cnx.session_passwd
       end
 
-    private
+    protected
+      # @private
       def register_default_event_handlers!
         @event_handler.register_state_handler(Zookeeper::ZOO_EXPIRED_SESSION_STATE, &method(:handle_expired_session_state_event!))
         @event_handler.register_state_handler(Zookeeper::ZOO_CONNECTED_STATE,       &method(:handle_connected_state_event!))
+        @event_handler.register_state_handler(Zookeeper::ZOO_CONNECTING_STATE,      &method(:handle_connecting_state_event!))
       end
 
+      # @private
       def handle_connected_state_event!(event)
         reset_connected_event.succeed(event)
       end
 
+      # @private
+      def handle_connecting_state_event!(event)
+        reset_connecting_event.succeed(event)
+      end
+
+      # @private
       def handle_expired_session_state_event!(event)
         exc = ZK::Exceptions::ConnectionLoss.new("Received EXPIRED_SESSION_STATE event: #{event.inspect}")
         exc.set_backtrace(caller)
         connection_lost_hook(exc)
       end
 
+      # @private
       def connection_lost_hook(exc)
         if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
           reset_connection_lost_event.succeed(exc)
