@@ -70,7 +70,7 @@ module ZK
         #
         # @param [Hash] hash the result of the async call 
         # 
-        # @returns [true, false] for success, failure 
+        # @return [true, false] for success, failure 
         def success?(hash)
           hash[:rc] == Zookeeper::ZOK
         end

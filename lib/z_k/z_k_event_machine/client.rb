@@ -1,22 +1,57 @@
 module ZK
   module ZKEventMachine
     class Client < ZK::Client::Base
+      include Deferred::Accessors
       include ZK::Logging
       include Unixisms
 
       DEFAULT_TIMEOUT = 10
 
+      # If we get a ZK::Exceptions::ConnectionLoss exeption back from any call,
+      # or a EXPIRED_SESSION_STATE event, we will call back any handlers registered
+      # here with the exception instance as the argument.
+      #
+      # once this deferred has been fired, it will be replaced with a new
+      # deferred, so callbacks must be re-registered, and *should* be
+      # re-registered *within* the callback to avoid missing events
+      # 
+      # @method on_connection_lost
+      # @return [Deferred::Default]
+      deferred_event :connection_lost
+      
+
+      # Registers a one-shot callback for the ZOO_CONNECTED_STATE event. 
+      #
+      # @note this is experimental currently. This may or may not fire for the *initial* connection.
+      # it's purpose is to warn an already-existing client with watches that a connection has been
+      # re-established (with session information saved). From the ZooKeeper Programmers' Guide:
+      #
+      #   If you are using watches, you must look for the connected watch event.
+      #   When a ZooKeeper client disconnects from a server, you will not receive
+      #   notification of changes until reconnected. If you are watching for a
+      #   znode to come into existance, you will miss the event if the znode is
+      #   created and deleted while you are disconnected.
+      #
+      # once this deferred has been fired, it will be replaced with a new
+      # deferred, so callbacks must be re-registered, and *should* be
+      # re-registered *within* the callback to avoid missing events
+      #
+      # @method on_connected
+      # @return [Deferred::Default]
+      deferred_event :connected
+
+      # called back once the connection has been closed.
+      #
+      # @method on_close
+      # @return [Deferred::Default]
+      deferred_event :close
+
       # Takes same options as ZK::Client::Base
       def initialize(host, opts={})
         @host = host
-        @close_deferred = Deferred::Default.new
-        @connection_lost_deferred = Deferred::Default.new
-        @event_handler = EventHandlerEM.new(self)
-      end
-
-      def on_close(&blk)
-        @close_deferred.callback(&blk) if blk
-        @close_deferred
+        @event_handler  = EventHandlerEM.new(self)
+        @closing        = false
+        register_default_event_handlers!
       end
 
       # open a ZK connection, attach it to the reactor. 
@@ -25,22 +60,9 @@ module ZK
       def connect(&blk)
         # XXX: maybe move this into initialize, need to figure out how to schedule it properly
         @cnx ||= (
-          event_handler.register_state_handler(Zookeeper::ZOO_EXPIRED_SESSION_STATE, &method(:handle_expired_session_state_event!))
           ZookeeperEM::Client.new(@host, DEFAULT_TIMEOUT, event_handler.get_default_watcher_block)
         )
         @cnx.on_attached(&blk)
-      end
-
-      # If we get a ZK::Exceptions::ConnectionLoss exeption back from any call,
-      # we will call back any handlers registered here with the exception
-      # instance as the argument
-      #
-      # once this deferred has been fired, it will be replaced with a new
-      # deferred, so callbacks must be re-registered
-      # 
-      def on_connection_lost(&blk)
-        @connection_lost_deferred.callback(&blk) if blk
-        @connection_lost_deferred
       end
 
       def reopen(*a)
@@ -49,6 +71,8 @@ module ZK
       
       def close!(&blk)
         on_close(&blk)
+        return on_close if @closing
+        @closing = true
 
         if @cnx
           logger.debug { "#{self.class.name}: in close! clearing event_handler" }
@@ -70,7 +94,7 @@ module ZK
 
       # get data at path, optionally enabling a watch on the node
       #
-      # @returns [Callback] returns a Callback which is an EM::Deferred (so you
+      # @return [Callback] returns a Callback which is an EM::Deferred (so you
       #   can assign callbacks/errbacks) see Callback::Base for discussion
       #
       def get(path, opts={}, &block)
@@ -137,17 +161,28 @@ module ZK
         end
       end
 
+      # @return [Fixnum] The underlying connection's session_id
       def session_id
         return nil unless @cnx
         @cnx.session_id
       end
 
+      # @return [String] The underlying connection's session passwd (an opaque value)
       def session_passwd
         return nil unless @cnx
         @cnx.session_passwd
       end
 
-    protected
+    private
+      def register_default_event_handlers!
+        @event_handler.register_state_handler(Zookeeper::ZOO_EXPIRED_SESSION_STATE, &method(:handle_expired_session_state_event!))
+        @event_handler.register_state_handler(Zookeeper::ZOO_CONNECTED_STATE,       &method(:handle_connected_state_event!))
+      end
+
+      def handle_connected_state_event!(event)
+        reset_connected_event.succeed(event)
+      end
+
       def handle_expired_session_state_event!(event)
         exc = ZK::Exceptions::ConnectionLoss.new("Received EXPIRED_SESSION_STATE event: #{event.inspect}")
         exc.set_backtrace(caller)
@@ -156,8 +191,7 @@ module ZK
 
       def connection_lost_hook(exc)
         if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
-          dfr, @connection_lost_deferred = @connection_lost_deferred, Deferred::Default.new
-          dfr.succeed(exc)
+          reset_connection_lost_event.succeed(exc)
         end
       end
     end
