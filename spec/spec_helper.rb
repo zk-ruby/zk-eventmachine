@@ -10,8 +10,6 @@ require 'evented-spec'
 # in spec/support/ and its subdirectories.
 Dir[File.expand_path("../support/**/*.rb", __FILE__)].each {|f| require f}
 
-$stderr.sync = true
-
 case `uname -s`.chomp
 when 'Linux'
   $stderr.puts "WARN: setting EM.epoll = true for tests"
@@ -19,6 +17,25 @@ when 'Linux'
 when 'Darwin'
   $stderr.puts "WARN: setting EM.kqueue = true for tests"
   EM.kqueue = true
+end
+
+# method to wait until block passed returns true or timeout (default is 2 seconds) is reached 
+def wait_until(timeout=2)
+  time_to_stop = Time.now + timeout
+
+  until yield 
+    break if Time.now > time_to_stop
+    Thread.pass
+  end
+end
+
+def wait_while(timeout=2)
+  time_to_stop = Time.now + timeout
+
+  while yield 
+    break if Time.now > time_to_stop
+    Thread.pass
+  end
 end
 
 RSpec.configure do |config|
