@@ -29,7 +29,7 @@ end
   end
 
   task rspec_task_name => bundle_task_name do
-    sh "rvm #{ruby_with_gemset} do bundle exec rspec spec"
+    sh "rvm #{ruby_with_gemset} do bundle exec rspec spec --fail-fast"
   end
 
   task 'mb:test_all' => rspec_task_name
