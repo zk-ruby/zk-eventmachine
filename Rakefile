@@ -20,7 +20,7 @@ end
   rspec_task_name     = "mb:#{rvm_ruby}:run_rspec"
 
   task create_gemset_name do
-    sh "rvm #{rvm_ruby} && rvm gemset create #{gemset_name}" 
+    sh "rvm #{rvm_ruby} do rvm gemset create #{gemset_name}" 
   end
 
   task bundle_task_name => create_gemset_name do
