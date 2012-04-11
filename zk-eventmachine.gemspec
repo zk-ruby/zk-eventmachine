@@ -12,19 +12,20 @@ Gem::Specification.new do |s|
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-  s.add_dependency('zk', '~> 0.8.6')
+  s.add_dependency 'zk', '~> 0.8.7'
 
   # zk depends on slyphon-zookeeper, but we need at least this version
-  s.add_dependency('slyphon-zookeeper', '~> 0.2.8')
-  s.add_dependency('eventmachine', '~> 1.0.0.beta.3')
-  s.add_dependency('deferred', '~> 0.5.3')
+  s.add_dependency 'slyphon-zookeeper', '~> 0.3.0'
+  s.add_dependency 'eventmachine',      '~> 1.0.0.beta.4'
+  s.add_dependency 'deferred',          '~> 0.5.3'
 
-  s.add_development_dependency('rspec', '~> 2.5.0')
-  s.add_development_dependency('yard', '~> 0.7.0')
-  s.add_development_dependency('autotest', '>= 4.4.0')
-  s.add_development_dependency('flexmock', '~> 0.8.10')
-  s.add_development_dependency('evented-spec', '~> 0.4.1')
-  s.add_development_dependency('redcarpet', '~> 2.1.0')
+  s.add_development_dependency 'rspec',       '~> 2.8.0'
+  s.add_development_dependency 'yard',        '~> 0.7.0'
+  s.add_development_dependency 'autotest',    '>= 4.4.0'
+  s.add_development_dependency 'flexmock',    '~> 0.8.10'
+  s.add_development_dependency 'evented-spec','~> 0.9.0'
+  s.add_development_dependency 'redcarpet',   '~> 2.1.0'
+  s.add_development_dependency 'rake'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
