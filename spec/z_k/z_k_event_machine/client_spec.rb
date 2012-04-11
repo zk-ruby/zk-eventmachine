@@ -1,20 +1,19 @@
 require 'spec_helper'
 
 module ZK::ZKEventMachine
-  describe 'Client' do
+  shared_examples_for 'Client' do
     include EventedSpec::SpecHelper
     default_timeout 2.0
 
+    let(:base_path) { '/zk-em-testing' }
+
     before do
-      @zk = ::ZK.new
-      @base_path = '/zk-em-testing'
-      @zk.rm_rf(@base_path)
-      @zk.mkdir_p(@base_path)
-      @zkem = ZK::ZKEventMachine::Client.new('localhost:2181')
+      @zk.rm_rf(base_path)
+      @zk.mkdir_p(base_path)
     end
 
     after do
-      @zk.rm_rf(@base_path)
+      @zk.rm_rf(base_path)
       @zk.close!
     end
 
@@ -54,11 +53,10 @@ module ZK::ZKEventMachine
       end
     end
 
-
     describe 'get' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @data = 'this is data'
           @zk.create(@path, @data)
         end
@@ -101,7 +99,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -139,7 +137,7 @@ module ZK::ZKEventMachine
     describe 'create' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
 
           @data = 'this is data'
@@ -205,7 +203,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.create(@path, '')
         end
 
@@ -242,7 +240,7 @@ module ZK::ZKEventMachine
     describe 'set' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @data = 'this is data'
           @new_data = 'this is better data'
           @zk.create(@path, @data)
@@ -292,7 +290,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -328,7 +326,7 @@ module ZK::ZKEventMachine
 
     describe 'exists?' do
       before do
-        @path = [@base_path, 'foo'].join('/')
+        @path = [base_path, 'foo'].join('/')
         @data = 'this is data'
       end
 
@@ -374,7 +372,7 @@ module ZK::ZKEventMachine
     describe 'stat' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @data = 'this is data'
           @zk.create(@path, @data)
           @orig_stat = @zk.stat(@path)
@@ -416,7 +414,7 @@ module ZK::ZKEventMachine
 
       describe 'non-existent node' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -445,7 +443,7 @@ module ZK::ZKEventMachine
     describe 'delete' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @data = 'this is data'
           @zk.create(@path, @data)
         end
@@ -483,7 +481,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -520,7 +518,7 @@ module ZK::ZKEventMachine
     describe 'children' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @child_1_path = [@path, 'child_1'].join('/')
           @child_2_path = [@path, 'child_2'].join('/')
 
@@ -574,7 +572,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -611,7 +609,7 @@ module ZK::ZKEventMachine
     describe 'get_acl' do
       describe 'success' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @data = 'this is data'
           @zk.create(@path, @data)
         end
@@ -655,7 +653,7 @@ module ZK::ZKEventMachine
 
       describe 'failure' do
         before do
-          @path = [@base_path, 'foo'].join('/')
+          @path = [base_path, 'foo'].join('/')
           @zk.delete(@path) rescue ZK::Exceptions::NoNode
         end
 
@@ -717,7 +715,6 @@ module ZK::ZKEventMachine
         em do
           @zkem.session_passwd.should be_nil
 
-
           @zkem.connect do
             @zkem.session_passwd.should be_kind_of(String)
             @zkem.close! { done }
@@ -728,7 +725,7 @@ module ZK::ZKEventMachine
 
     describe 'on_connection_lost' do
       before do
-        @path = [@base_path, 'foo'].join('/')
+        @path = [base_path, 'foo'].join('/')
         @data = 'this is data'
         @zk.create(@path, @data)
       end
@@ -816,5 +813,42 @@ module ZK::ZKEventMachine
       end
     end # on_connecting
   end # Client
+
+  describe 'regular' do
+
+    before do
+      @zkem = ZK::ZKEventMachine::Client.new('localhost:2181')
+      @zk = ZK.new.tap { |z| wait_until { z.connected? } }
+      @zk.should be_connected
+    end
+
+    it_should_behave_like 'Client'
+  end
+
+  describe 'chrooted' do
+    let(:chroot_path) { '/_zkem_chroot_' }
+    let(:zk_connect_host) { "localhost:2181#{chroot_path}" }
+
+    before :all do
+      ZK.open('localhost:2181') do |z|
+        z.rm_rf(chroot_path)
+        z.mkdir_p(chroot_path)
+      end
+    end
+
+    after :all do
+      ZK.open('localhost:2181') do |z|
+        z.rm_rf(chroot_path)
+      end
+    end
+
+    before do
+      @zkem = ZK::ZKEventMachine::Client.new(zk_connect_host)
+      @zk = ZK.new(zk_connect_host).tap { |z| wait_until { z.connected? } }
+      @zk.should be_connected
+    end
+
+    it_should_behave_like 'Client'
+  end
 end # ZK::ZKEventMachine
 
