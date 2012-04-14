@@ -12,10 +12,10 @@ Dir[File.expand_path("../support/**/*.rb", __FILE__)].each {|f| require f}
 
 case `uname -s`.chomp
 when 'Linux'
-  $stderr.puts "WARN: setting EM.epoll = true for tests"
+#   $stderr.puts "WARN: setting EM.epoll = true for tests"
   EM.epoll = true
 when 'Darwin'
-  $stderr.puts "WARN: setting EM.kqueue = true for tests"
+#   $stderr.puts "WARN: setting EM.kqueue = true for tests"
   EM.kqueue = true
 end
 
