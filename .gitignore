@@ -5,6 +5,6 @@ pkg/*
 .rvmrc
 .vimrc
 .rspec
-*.log
+*.log*
 .yardoc
 doc
