@@ -33,6 +33,12 @@ module ZK
           end
         end
 
+        # save a context object, used for associating delivered events with the request that created them
+        attr_accessor :context
+
+        # saves the request id of this call
+        attr_reader :req_id
+
         def initialize(prok=nil, &block)
           on_result(prok, &block)
         end
@@ -49,7 +55,11 @@ module ZK
         # Checks the return code from the async call. If the return code was not ZOK,
         # then fire the errbacks and do the node-style error call
         # otherwise, does nothing
+        #
+        # in this call we also stash the outgoing req_id so we can sync it up
         def check_async_rc(hash)
+          @req_id = hash[:req_id]
+          logger.debug { "#{__method__}: got #{hash.inspect}" } 
           call(hash) unless success?(hash)
         end
 
@@ -58,11 +68,11 @@ module ZK
         # we take the appropriate actions
         #
         # delegates to #deferred_style_result and #node_style_result
-        def call(hash)
-#           logger.debug { "#{self.class.name}#call hash: #{hash.inspect}" }
+        def call(result)
+          logger.debug { "\n#{self.class.name}##{__method__}\n\treq_id: #{req_id.inspect}\n\tcontext: #{context.inspect}\n\tresult: #{result.inspect}" }
           EM.schedule do
-            deferred_style_result(hash) 
-            node_style_result(hash)
+            deferred_style_result(result) 
+            node_style_result(result)
           end
         end
 

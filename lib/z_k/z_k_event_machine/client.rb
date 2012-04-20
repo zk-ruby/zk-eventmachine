@@ -107,6 +107,7 @@ module ZK
       def get(path, opts={}, &block)
         Callback.new_get_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -114,6 +115,7 @@ module ZK
       def create(path, data='', opts={}, &block)
         Callback.new_create_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :data => data, :opts => opts }
           super(path, data, opts.merge(:callback => cb))
         end
       end
@@ -121,6 +123,7 @@ module ZK
       def set(path, data, opts={}, &block)
         Callback.new_set_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :data => data, :opts => opts }
           super(path, data, opts.merge(:callback => cb))
         end
       end
@@ -132,6 +135,7 @@ module ZK
 
         Callback.__send__(meth, block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :meth => meth, :opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -143,6 +147,7 @@ module ZK
       def delete(path, opts={}, &block)
         Callback.new_delete_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -150,6 +155,7 @@ module ZK
       def children(path, opts={}, &block)
         Callback.new_children_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -157,6 +163,7 @@ module ZK
       def get_acl(path, opts={}, &block)
         Callback.new_get_acl_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
@@ -164,6 +171,7 @@ module ZK
       def set_acl(path, acls, opts={}, &block)
         Callback.new_set_acl_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
+          cb.context = { :method => __method__, :path => path, :acls => acls, :opts => opts }
           super(path, acls, opts.merge(:callback => cb))
         end
       end
