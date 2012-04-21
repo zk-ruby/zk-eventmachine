@@ -19,27 +19,12 @@ when 'Darwin'
   EM.kqueue = true
 end
 
-# method to wait until block passed returns true or timeout (default is 2 seconds) is reached 
-def wait_until(timeout=2)
-  time_to_stop = Time.now + timeout
-
-  until yield 
-    break if Time.now > time_to_stop
-    Thread.pass
-  end
-end
-
-def wait_while(timeout=2)
-  time_to_stop = Time.now + timeout
-
-  while yield 
-    break if Time.now > time_to_stop
-    Thread.pass
-  end
-end
-
 RSpec.configure do |config|
   config.mock_with :flexmock
+  config.extend   SpecGlobalLogger
+  config.include  SpecGlobalLogger
+  config.extend   WaitWatchers
+  config.include  WaitWatchers
 end
 
 

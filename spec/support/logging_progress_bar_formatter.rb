@@ -17,7 +17,7 @@ module RSpec
     module Formatters
       class ProgressFormatter
         def example_started(example)
-          ZK.logger.info(yellow("\n=====<([ #{example.full_description} ])>=====\n"))
+          ZK.logger << yellow("\n=====<([ #{example.full_description} ])>=====\n\n")
           super(example)
         end
       end
