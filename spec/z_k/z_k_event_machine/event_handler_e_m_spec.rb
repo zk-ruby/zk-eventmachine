@@ -14,10 +14,11 @@ module ZK::ZKEventMachine
     end
 
     after do
-      @zk.rm_rf(@base_path)
-      @zk.close!
+      mute_logger do
+        @zk.rm_rf(@base_path)
+        @zk.close!
+      end
     end
-
 
     # this is a test of event delivery in general, not just of the
     # EventHandlerEM implementation
@@ -71,8 +72,8 @@ module ZK::ZKEventMachine
               ary.should be_empty
               stat.should be_kind_of(ZookeeperStat::Stat)
 
-              @zkem.create(@child_path, '') { |p|
-                p.should == @path
+              @zkem.create(@child_path, '').callback { |p|
+                p.should == @child_path
 
               }.errback(&eb_raise)
             }.errback(&eb_raise)
