@@ -18,7 +18,6 @@ module ZK
       # @method on_connection_lost
       # @return [Deferred::Default]
       deferred_event :connection_lost
-      
 
       # Registers a one-shot callback for the ZOO_CONNECTED_STATE event. 
       #
@@ -58,6 +57,11 @@ module ZK
         @event_handler  = EventHandlerEM.new(self)
         @closing        = false
         register_default_event_handlers!
+      end
+
+      # @private
+      def closing?
+        !!@closing
       end
 
       # open a ZK connection, attach it to the reactor. 
