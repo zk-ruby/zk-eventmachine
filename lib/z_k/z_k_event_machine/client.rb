@@ -107,7 +107,7 @@ module ZK
       def get(path, opts={}, &block)
         Callback.new_get_cb(block) do |cb|
           cb.errback(&method(:connection_lost_hook))
-          cb.context = { :method => __method__, :path => path, opts => opts }
+          cb.context = { :method => __method__, :path => path, :opts => opts }
           super(path, opts.merge(:callback => cb))
         end
       end
