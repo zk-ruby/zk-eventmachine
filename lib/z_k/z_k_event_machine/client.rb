@@ -198,12 +198,12 @@ module ZK
 
       # @private
       def handle_connected_state_event!(event)
-        reset_connected_event.succeed(event)
+        EM.schedule { reset_connected_event.succeed(event) }
       end
 
       # @private
       def handle_connecting_state_event!(event)
-        reset_connecting_event.succeed(event)
+        EM.schedule { reset_connecting_event.succeed(event) }
       end
 
       # @private
@@ -216,7 +216,7 @@ module ZK
       # @private
       def connection_lost_hook(exc)
         if exc and exc.kind_of?(ZK::Exceptions::ConnectionLoss)
-          reset_connection_lost_event.succeed(exc)
+          EM.schedule { reset_connection_lost_event.succeed(exc) }
         end
       end
     end
