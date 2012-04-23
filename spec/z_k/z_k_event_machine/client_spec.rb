@@ -739,7 +739,7 @@ module ZK::ZKEventMachine
           end
 
           @zkem.connect do
-            flexmock(@zkem.cnx) do |m|
+            flexmock(@zkem.__send__(:cnx)) do |m|  # ok, this is being a bit naughty with the __send__
               m.should_receive(:get).with(Hash).and_return do |hash|
                 logger.debug { "client received :get wtih #{hash.inspect}" }
                 @user_cb = hash[:callback]
