@@ -50,7 +50,9 @@ module ZK::ZKEventMachine
             @zkem.stat(@path, :watch => true) do |e,*a| 
               raise e if e
 
-              @zkem.set(@path, @new_data) { |e| raise e if e }
+              @zkem.set(@path, @new_data) do |e,*a|
+                raise e if e
+              end
             end
           end
         end
