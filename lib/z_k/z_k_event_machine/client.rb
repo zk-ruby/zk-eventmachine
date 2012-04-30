@@ -192,6 +192,15 @@ module ZK
         @cnx.session_passwd
       end
 
+      # Used by the event_handler to deliver callbacks. This hopefully won't
+      # have any other side-effects, as it's not happening on a separate
+      # thread, rather just in the next reactor tick.
+      #
+      # @private
+      def defer
+        EM.next_tick { yield }
+      end
+
     protected
       # @private
       def register_default_event_handlers!

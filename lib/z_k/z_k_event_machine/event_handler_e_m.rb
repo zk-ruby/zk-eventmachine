@@ -6,17 +6,6 @@ module ZK
     class EventHandlerEM < ZK::EventHandler
       include ZK::Logging
 
-      def register(path, &block)
-        # use the supplied block, but ensure that it gets called on the reactor
-        # thread
-        new_blk = lambda do |*a|
-          EM.schedule { block.call(*a) }
-        end
-
-        super(path, &new_blk)
-      end
-      alias :subscribe :register
-
       def process(event)
         EM.schedule { super(event) }
       end
