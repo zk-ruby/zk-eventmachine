@@ -1,5 +1,6 @@
-source ENV['MBOX_BUNDLER_SOURCE'] if ENV['MBOX_BUNDLER_SOURCE']
 source "http://rubygems.org"
+
+# gem 'zk', :path => '~/zk'
 
 group :test do
   gem 'rspec',       '~> 2.8.0'
