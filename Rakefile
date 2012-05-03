@@ -1,17 +1,6 @@
 require 'bundler'
 Bundler::GemHelper.install_tasks
 
-task :yard do
-  Bundler.setup
-  require 'yard'
-
-  YARD::Rake::YardocTask.new(:run_yardoc) do |t|
-    t.files = ['lib/**/*.rb']
-  end
-
-  Rake::Task[:run_yardoc].invoke
-end
-
 gemset_name  = 'zk-em'
 
 %w[1.8.7 1.9.2 jruby rbx 1.9.3].each do |ns_name|
@@ -59,4 +48,33 @@ task 'mb:test_all' do
 
   $stderr.puts "Test run took: #{tm}"
 end
+
+# task :yard do
+#   Bundler.setup
+#   require 'yard'
+# 
+#   YARD::Rake::YardocTask.new(:run_yardoc) do |t|
+#     t.files = ['lib/**/*.rb']
+#   end
+# 
+#   Rake::Task[:run_yardoc].invoke
+# end
+
+
+namespace :yard do
+  task :clean do
+    rm_rf '.yardoc'
+  end
+
+  task :server => :clean do
+    sh "yard server --reload --port=8810"
+  end
+
+  task :gems do
+    sh 'yard server --gems --port=8811'
+  end
+end
+
+task :clean => 'yard:clean'
+
 

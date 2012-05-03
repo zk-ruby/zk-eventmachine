@@ -1,5 +1,29 @@
 module ZK
   module ZKEventMachine
+    # @example use of on_connecting
+    #
+    #   def handle_connecting_event(event=nil)
+    #
+    #     # this (re-)registers this hook for the next time this event is called
+    #     @zkem.on_connecting(&:handle_connecting_event)
+    #
+    #     return unless event     # nil is the initial registration case
+    #
+    #     logger.warn { "Oh no! got a connecting event, taking evasive action!" }
+    #
+    #     # do stuff
+    #   end
+    #
+    #
+    #   # your setup method would then look like
+    #   def run
+    #     @zkem.connect do
+    #       handle_connecting_event
+    #       
+    #       do_the_rest_of_your_stuff
+    #     end
+    #   end
+    #
     class Client < ZK::Client::Base
       include Deferred::Accessors
       include ZK::Logging
@@ -14,6 +38,10 @@ module ZK
       # once this deferred has been fired, it will be replaced with a new
       # deferred, so callbacks must be re-registered, and *should* be
       # re-registered *within* the callback to avoid missing events
+      #
+      # @note if you want to be notified when the connection state has not
+      #   become *invalid* but you are in a possibly recoverable state, then
+      #   you should hook the {#on_connecting} method
       # 
       # @method on_connection_lost
       # @return [Deferred::Default]
@@ -43,7 +71,17 @@ module ZK
       #
       # This event is triggered when we have become disconnected from the
       # cluster and are in the process of reconnecting.
+      # 
+      # @note this would more accurately be called `on_disconnection`, but because
+      #   it's fired also when the client is starting up, it has the name it does.
+      #   there's an alias for this `on_disconnection`. (It's not `on_disconnected`
+      #   because the '-ion' seems to indicate that the condition may be temporary)
+      #
+      # @method on_connecting
+      # @return [Deferred::Default]
       deferred_event :connecting
+
+      alias :on_disconnection :on_connecting
 
       # called back once the connection has been closed.
       #

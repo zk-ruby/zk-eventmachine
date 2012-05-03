@@ -811,6 +811,35 @@ module ZK::ZKEventMachine
           end
         end
       end
+
+      it %[should re-register when the hook in the documentation is used] do
+
+        @perform_count = 0
+
+        hook = proc do |ev|
+          @zkem.on_connecting(&hook)
+
+          if ev
+            @perform_count += 1
+          end
+
+          if @perform_count == 2
+            @zkem.close! { done }
+          end
+        end
+
+        em do
+          hook.call
+
+          @zkem.connect do
+            event = event_mock(:connecting_event).tap do |ev|
+              ev.should_receive(:state).and_return(Zookeeper::ZOO_CONNECTING_STATE)
+            end
+
+            2.times { EM.next_tick { @zkem.event_handler.process(event) } }
+          end
+        end
+      end
     end # on_connecting
   end # Client
 
