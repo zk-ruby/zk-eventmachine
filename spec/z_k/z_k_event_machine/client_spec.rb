@@ -829,7 +829,7 @@ module ZK::ZKEventMachine
         end
 
         em do
-          hook.call
+          hook.call(nil)
 
           @zkem.connect do
             event = event_mock(:connecting_event).tap do |ev|
