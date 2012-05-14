@@ -1,65 +1,32 @@
-require 'bundler'
-Bundler::GemHelper.install_tasks
-
 gemset_name  = 'zk-em'
 
-%w[1.8.7 1.9.2 jruby rbx 1.9.3].each do |ns_name|
-  rvm_ruby = (ns_name == 'rbx') ? "rbx-2.0.testing" : ns_name
+release_ops_path = File.expand_path('../releaseops/lib', __FILE__)
 
-  ruby_with_gemset        = "#{rvm_ruby}@#{gemset_name}"
-  create_gemset_task_name = "mb:#{ns_name}:create_gemset"
-  bundle_task_name        = "mb:#{ns_name}:bundle_install"
-  rspec_task_name         = "mb:#{ns_name}:run_rspec"
+# if the special submodule is availabe, use it
+# we use a submodule because it doesn't depend on anything else (*cough* bundler)
+# and can be shared across projects
+#
+if File.exists?(release_ops_path)
+  require File.join(release_ops_path, 'releaseops')
+  
+  # sets up the multi-ruby zk:test_all rake tasks
+  ReleaseOps::TestTasks.define_for(*%w[1.8.7 1.9.2 jruby rbx ree 1.9.3])
 
-  phony_gemfile_link_name = "Gemfile.#{ns_name}"
-  phony_gemfile_lock_name = "#{phony_gemfile_link_name}.lock"
+  # sets up the task :default => 'spec:run' and defines a simple
+  # "run the specs with the current rvm profile" task
+  ReleaseOps::TestTasks.define_simple_default_for_travis
 
-  file phony_gemfile_link_name do
-    # apparently, rake doesn't deal with symlinks intelligently :P
-    ln_s('Gemfile', phony_gemfile_link_name) unless File.symlink?(phony_gemfile_link_name)
-  end
+  # Define a task to run code coverage tests
+  ReleaseOps::TestTasks.define_simplecov_tasks
 
-  task :clean do
-    rm_rf [phony_gemfile_lock_name, phony_gemfile_lock_name]
-  end
+  # set up yard:server, yard:gems, and yard:clean tasks 
+  # for doing documentation stuff
+  ReleaseOps::YardTasks.define
 
-  task create_gemset_task_name do
-    sh "rvm #{rvm_ruby} do rvm gemset create #{gemset_name}" 
-  end
 
-  task bundle_task_name => [phony_gemfile_link_name, create_gemset_task_name] do
-    sh "rvm #{ruby_with_gemset} do bundle install --gemfile #{phony_gemfile_link_name}"
-  end
-
-  task rspec_task_name => bundle_task_name do
-    sh "rvm #{ruby_with_gemset} do env BUNDLE_GEMFILE=#{phony_gemfile_link_name} bundle exec rspec spec --fail-fast"
-  end
-
-  task "mb:#{ns_name}" => rspec_task_name
-
-  task "mb:test_all_rubies" => rspec_task_name
 end
 
-task 'mb:test_all' do
-  require 'benchmark'
-  tm = Benchmark.realtime do
-    Rake::Task['mb:test_all_rubies'].invoke
-  end
-
-  $stderr.puts "Test run took: #{tm}"
-end
-
-# task :yard do
-#   Bundler.setup
-#   require 'yard'
-# 
-#   YARD::Rake::YardocTask.new(:run_yardoc) do |t|
-#     t.files = ['lib/**/*.rb']
-#   end
-# 
-#   Rake::Task[:run_yardoc].invoke
-# end
-
+task 'mb:test_all' => 'zk:test_all'
 
 namespace :yard do
   task :clean do
