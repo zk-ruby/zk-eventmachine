@@ -70,7 +70,7 @@ module ZK::ZKEventMachine
                 logger.debug { "got callback with #{a.inspect}" }
                 a.should_not be_empty
                 a.first.should == @data
-                a.last.should be_instance_of(ZookeeperStat::Stat)
+                a.last.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -88,7 +88,7 @@ module ZK::ZKEventMachine
               @zkem.get(@path) do |exc,data,stat|
                 exc.should be_nil
                 data.should == @data
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -253,7 +253,7 @@ module ZK::ZKEventMachine
               dfr = @zkem.set(@path, @new_data)
 
               dfr.callback do |stat| 
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 stat.version.should > @orig_stat.version
                 EM.reactor_thread?.should be_true
 
@@ -275,7 +275,7 @@ module ZK::ZKEventMachine
             @zkem.connect do
               @zkem.set(@path, @new_data) do |exc,stat|
                 exc.should be_nil
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
 
                 @zkem.get(@path) do |_,data|
@@ -386,7 +386,7 @@ module ZK::ZKEventMachine
               dfr.callback do |stat| 
                 stat.should_not be_nil
                 stat.should == @orig_stat
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -403,7 +403,7 @@ module ZK::ZKEventMachine
             @zkem.connect do
               @zkem.stat(@path) do |exc,stat|
                 exc.should be_nil
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -426,7 +426,7 @@ module ZK::ZKEventMachine
               dfr.callback do |stat| 
                 stat.should_not be_nil
                 stat.exists?.should be_false
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -539,7 +539,7 @@ module ZK::ZKEventMachine
                 children.should include('child_1')
                 children.should include('child_2')
 
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
 
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
@@ -561,7 +561,7 @@ module ZK::ZKEventMachine
                 children.length.should == 2
                 children.should include('child_1')
                 children.should include('child_2')
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end
@@ -621,8 +621,8 @@ module ZK::ZKEventMachine
 
               dfr.callback do |acls,stat| 
                 acls.should be_kind_of(Array)
-                acls.first.should be_kind_of(ZookeeperACLs::ACL)
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                acls.first.should be_kind_of(Zookeeper::ACLs::ACL)
+                stat.should be_instance_of(Zookeeper::Stat)
 
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
@@ -641,8 +641,8 @@ module ZK::ZKEventMachine
               @zkem.get_acl(@path) do |exc,acls,stat|
                 exc.should be_nil
                 acls.should be_kind_of(Array)
-                acls.first.should be_kind_of(ZookeeperACLs::ACL)
-                stat.should be_instance_of(ZookeeperStat::Stat)
+                acls.first.should be_kind_of(Zookeeper::ACLs::ACL)
+                stat.should be_instance_of(Zookeeper::Stat)
                 EM.reactor_thread?.should be_true
                 @zkem.close! { done }
               end

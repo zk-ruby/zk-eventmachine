@@ -72,7 +72,7 @@ module ZK::ZKEventMachine
             @zkem.children(@path, :watch => true).callback { |ary,stat|
               logger.debug { "called back with: #{ary.inspect}" }
               ary.should be_empty
-              stat.should be_kind_of(ZookeeperStat::Stat)
+              stat.should be_kind_of(Zookeeper::Stat)
 
               @zkem.create(@child_path, '').callback { |p|
                 p.should == @child_path
