@@ -12,12 +12,10 @@ Gem::Specification.new do |s|
   s.summary     = %q{ZK client for EventMachine-based (async) applications}
   s.description = s.description
 
-  s.add_dependency 'zk', '~> 1.4.1'
+  s.add_dependency 'zk', '~> 1.6.1'
 
-  # zk depends on slyphon-zookeeper, but we need at least this version
-  s.add_dependency 'zookeeper', '~> 1.1.0'
-  s.add_dependency 'eventmachine',      '~> 1.0.0.beta.4'
-  s.add_dependency 'deferred',          '~> 0.5.3'
+  s.add_dependency 'eventmachine',  '~> 1.0.0.beta.4'
+  s.add_dependency 'deferred',      '~> 0.5.3'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

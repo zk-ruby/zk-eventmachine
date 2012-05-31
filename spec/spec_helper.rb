@@ -27,4 +27,6 @@ RSpec.configure do |config|
   config.include  WaitWatchers
 end
 
+Thread.current[:name] = 'main'
+
 

@@ -21,6 +21,7 @@ module ZK::ZKEventMachine
       flexmock(name).tap do |ev|
         ev.should_receive(:node_event?).and_return(false)
         ev.should_receive(:state_event?).and_return(true)
+        ev.should_receive(:session_event?).and_return(true)
         ev.should_receive(:zk=).with_any_args
         yield ev if block_given?
       end
